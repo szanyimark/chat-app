@@ -49,6 +49,17 @@ backend/prisma/migrations/
 frontend/.angular/
 frontend/src/assets/.gitkeep
 
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.nupkg
+**/Properties/launchSettings.json
+
 # Misc
 *.tgz
 .cache/
