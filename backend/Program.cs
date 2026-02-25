@@ -3,23 +3,38 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using HotChocolate.AspNetCore;
-using HotChocolate.Data;
+using ChatApp.Backend.Configuration;
 using ChatApp.Backend.Data;
+using ChatApp.Backend.GraphQL;
+using ChatApp.Backend.GraphQL.Types;
+using ChatApp.Backend.Services;
 using StackExchange.Redis;
+using DotNetEnv;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Load configuration
+var appConfig = ConfigLoader.Load(builder.Configuration);
 
 // Add services to the container.
 
 // Configure Entity Framework Core with PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(appConfig.GetConnectionString()));
+
+// Register AppConfig
+builder.Services.AddSingleton(appConfig);
+
+// Register JwtService
+builder.Services.AddSingleton<IJwtService, JwtService>();
+
+// Register IHttpContextAccessor
+builder.Services.AddHttpContextAccessor();
 
 // Configure JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!";
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "ChatApp";
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "ChatApp";
-
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -29,9 +44,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtIssuer,
-            ValidAudience = jwtAudience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            ValidIssuer = appConfig.JwtIssuer,
+            ValidAudience = appConfig.JwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(appConfig.JwtKey))
         };
     });
 
@@ -43,24 +58,22 @@ builder.Services
     .AddQueryType<Query>()
     .AddMutationType<Mutation>()
     .AddSubscriptionType<Subscription>()
+    .AddType<UserType>()
+    .AddType<ConversationGraphType>()
+    .AddType<MessageType>()
+    .AddType<ConversationMemberType>()
+    .AddType<ConversationTypeEnum>()
+    .AddType<MemberRoleEnum>()
     .AddFiltering()
     .AddSorting()
     .AddInMemorySubscriptions();
 
-// Configure Redis for pub/sub (optional - using in-memory for now)
-var redisConnectionString = builder.Configuration["Redis:ConnectionString"] ?? "localhost:6379";
-builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-{
-    try
-    {
-        return ConnectionMultiplexer.Connect(redisConnectionString);
-    }
-    catch
-    {
-        // Redis not available, return a dummy connection
-        return null!;
-    }
-});
+// Configure Redis for pub/sub
+var redisConnection = ConnectionMultiplexer.Connect(appConfig.RedisConnectionString);
+builder.Services.AddSingleton<IConnectionMultiplexer>(redisConnection);
+
+// Register Redis Pub/Sub Service
+builder.Services.AddSingleton<IRedisPubSubService, RedisPubSubService>();
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -109,21 +122,3 @@ app.MapGraphQL("/graphql")
 app.MapGraphQLWebSocket("/graphql");
 
 app.Run();
-
-// Placeholder Query type
-public class Query
-{
-    public string Hello() => "Hello from GraphQL!";
-}
-
-// Placeholder Mutation type
-public class Mutation
-{
-    public string Hello() => "Mutation works!";
-}
-
-// Placeholder Subscription type
-public class Subscription
-{
-    public string Hello() => "Subscription works!";
-}
