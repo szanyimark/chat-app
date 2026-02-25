@@ -50,8 +50,8 @@ frontend/.angular/
 frontend/src/assets/.gitkeep
 
 # .NET
-bin/
-obj/
+backend/bin/
+backend/obj/
 *.user
 *.suo
 *.userosscache

@@ -215,21 +215,21 @@ type Subscription {
 ## Implementation Roadmap
 
 ### Phase 1: Project Setup
-- [ ] Initialize Angular project
-- [ ] Initialize .NET backend project
-- [ ] Set up Docker Compose configuration
-- [ ] Configure PostgreSQL container
+- [x] Initialize Angular project
+- [x] Initialize .NET backend project
+- [x] Set up Docker Compose configuration
+- [x] Configure PostgreSQL container
 
 ### Phase 2: Backend Core
-- [ ] Set up Entity Framework Core with migrations
-- [ ] Implement user authentication (register/login)
-- [ ] Create GraphQL schema with Hot Chocolate
-- [ ] Implement JWT authentication middleware
-- [ ] Set up Redis PubSub for GraphQL Subscriptions
+- [x] Set up Entity Framework Core with migrations
+- [x] Implement user authentication (register/login)
+- [x] Create GraphQL schema with Hot Chocolate
+- [x] Implement JWT authentication middleware
+- [x] Set up Redis PubSub for GraphQL Subscriptions
 
 ### Phase 3: Real-Time Features
-- [ ] Set up GraphQL Subscriptions with WebSocket
-- [ ] Implement message subscription
+- [x] Set up GraphQL Subscriptions with WebSocket
+- [x] Implement message subscription
 - [ ] Add online presence tracking
 
 ### Phase 4: Frontend Core
@@ -260,6 +260,9 @@ chat-app/
 │   ├── ChatApp.Backend.csproj
 │   ├── Program.cs
 │   ├── appsettings.json
+│   ├── .env
+│   ├── Configuration/
+│   │   └── AppConfig.cs
 │   ├── Models/
 │   │   ├── User.cs
 │   │   ├── Conversation.cs
@@ -269,13 +272,18 @@ chat-app/
 │   │   └── AppDbContext.cs
 │   ├── GraphQL/
 │   │   ├── Types/
+│   │   │   ├── UserType.cs
+│   │   │   ├── ConversationType.cs
+│   │   │   ├── ConversationMemberType.cs
+│   │   │   └── MessageType.cs
 │   │   ├── Queries.cs
 │   │   ├── Mutations.cs
 │   │   └── Subscriptions.cs
 │   ├── Services/
-│   │   ├── AuthService.cs
-│   │   └── MessageService.cs
-│   └── DTOs/
+│   │   ├── JwtService.cs
+│   │   └── RedisPubSubService.cs
+│   └── Properties/
+│       └── launchSettings.json
 └── frontend/
     ├── src/
     │   ├── app/
