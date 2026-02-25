@@ -38,23 +38,30 @@ services:
       target: development
     container_name: chat-app-backend
     environment:
-      DATABASE_URL: postgresql://chatapp:chatapp_password@postgres:5432/chatapp
-      REDIS_URL: redis://redis:6379
-      PORT: 4000
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
-      NODE_ENV: development
+      Database__Host: postgres
+      Database__Port: 5432
+      Database__Name: chatapp
+      Database__Username: chatapp
+      Database__Password: chatapp_password
+      Redis__ConnectionString: redis://redis:6379
+      Jwt__Secret: your-super-secret-jwt-key-change-in-production
+      Jwt__Issuer: chatapp
+      Jwt__Audience: chatapp
+      App__Port: 5000
+      App__CorsOrigins: http://localhost:4200,http://localhost:8080
     ports:
-      - "4000:4000"
-      - "9229:9229"
+      - "5000:5000"
+      - "5001:5001"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - ./backend/src:/app/src
-      - ./backend/package.json:/app/package.json
-    command: npm run dev
+      - ./backend:/app
+      - /app/bin
+      - /app/obj
+    restart: unless-stopped
 
   frontend:
     build:
