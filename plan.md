@@ -18,12 +18,12 @@ A full-featured real-time chat application built with Angular, GraphQL, PostgreS
 |-------|------------|---------|
 | Frontend | Angular 17+ | UI Framework |
 | Frontend | Apollo Angular | GraphQL Client |
-| Backend | Node.js + TypeScript | Runtime |
-| Backend | Apollo Server | GraphQL API |
+| Backend | .NET 8 | Runtime |
+| Backend | Hot Chocolate | GraphQL API |
 | Real-time | GraphQL Subscriptions | WebSocket-based real-time |
 | Pub/Sub | Redis | Message broker for subscriptions |
 | Database | PostgreSQL | Primary database |
-| ORM | Prisma | Database access layer |
+| ORM | Entity Framework Core | Database access layer |
 | Auth | JWT | Token-based authentication |
 | Docker | Docker Compose | Container orchestration |
 
@@ -39,15 +39,15 @@ graph TB
         WS[WebSocket Connection]
     end
     
-    subgraph Server["Node.js Backend"]
-        API[Apollo Server]
+    subgraph Server[".NET Backend"]
+        API[Hot Chocolate GraphQL]
         Auth[JWT Auth]
         Sub[GraphQL Subscriptions]
         Resolvers[Resolvers]
     end
     
     subgraph Data["Data Layer"]
-        Prisma[Prisma ORM]
+        EF[Entity Framework Core]
         DB[(PostgreSQL)]
     end
     
@@ -57,8 +57,8 @@ graph TB
     WS --> Sub
     API --> Auth
     API --> Resolvers
-    Resolvers --> Prisma
-    Prisma --> DB
+    Resolvers --> EF
+    EF --> DB
 ```
 
 ---
@@ -70,7 +70,7 @@ graph TB
     subgraph Docker["Docker Compose"]
         NGINX[nginx reverse proxy]
         Frontend[Angular App]
-        Backend[Node.js API]
+        Backend[".NET API"]
         DB[PostgreSQL]
         Redis[Redis]
     end
@@ -87,7 +87,7 @@ graph TB
 |---------|-------|------|-------------|
 | `postgres` | postgres:15 | 5432 | Database |
 | `redis` | redis:7-alpine | 6379 | Pub/Sub for GraphQL Subscriptions |
-| `backend` | node:20 | 4000 | GraphQL API |
+| `backend` | mcr.microsoft.com/dotnet/aspnet:8.0 | 5000 | GraphQL API |
 | `frontend` | nginx:alpine | 80 | Angular SPA |
 | `nginx` | nginx:alpine | 80→443 | Reverse proxy |
 
@@ -216,14 +216,14 @@ type Subscription {
 
 ### Phase 1: Project Setup
 - [ ] Initialize Angular project
-- [ ] Initialize Node.js backend project
+- [ ] Initialize .NET backend project
 - [ ] Set up Docker Compose configuration
 - [ ] Configure PostgreSQL container
 
 ### Phase 2: Backend Core
-- [ ] Set up Prisma ORM with schema
+- [ ] Set up Entity Framework Core with migrations
 - [ ] Implement user authentication (register/login)
-- [ ] Create GraphQL schema and resolvers
+- [ ] Create GraphQL schema with Hot Chocolate
 - [ ] Implement JWT authentication middleware
 - [ ] Set up Redis PubSub for GraphQL Subscriptions
 
@@ -257,17 +257,25 @@ chat-app/
 ├── nginx/
 │   └── nginx.conf
 ├── backend/
-│   ├── src/
-│   │   ├── schema/
-│   │   ├── resolvers/
-│   │   ├── services/
-│   │   ├── pubsub/
-│   │   ├── middleware/
-│   │   └── index.ts
-│   ├── prisma/
-│   │   └── schema.prisma
-│   ├── package.json
-│   └── tsconfig.json
+│   ├── ChatApp.Backend.csproj
+│   ├── Program.cs
+│   ├── appsettings.json
+│   ├── Models/
+│   │   ├── User.cs
+│   │   ├── Conversation.cs
+│   │   ├── Message.cs
+│   │   └── ConversationMember.cs
+│   ├── Data/
+│   │   └── AppDbContext.cs
+│   ├── GraphQL/
+│   │   ├── Types/
+│   │   ├── Queries.cs
+│   │   ├── Mutations.cs
+│   │   └── Subscriptions.cs
+│   ├── Services/
+│   │   ├── AuthService.cs
+│   │   └── MessageService.cs
+│   └── DTOs/
 └── frontend/
     ├── src/
     │   ├── app/
