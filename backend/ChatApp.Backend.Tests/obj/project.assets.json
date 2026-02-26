@@ -200,7 +200,8 @@
           "Microsoft.AspNetCore.App"
         ],
         "build": {
-          "build/_._": {}
+          "build/HotChocolate.AspNetCore.props": {},
+          "build/HotChocolate.AspNetCore.targets": {}
         }
       },
       "HotChocolate.Authorization/15.1.12": {
@@ -8913,6 +8914,7 @@
   "projectFileDependencyGroups": {
     "net8.0": [
       "ChatApp.Backend >= 1.0.0",
+      "HotChocolate.AspNetCore >= 15.1.12",
       "Microsoft.EntityFrameworkCore.InMemory >= 8.0.0",
       "Microsoft.NET.Test.Sdk >= 18.3.0",
       "Moq >= 4.20.72",
@@ -8967,6 +8969,10 @@
       "net8.0": {
         "targetAlias": "net8.0",
         "dependencies": {
+          "HotChocolate.AspNetCore": {
+            "target": "Package",
+            "version": "[15.1.12, )"
+          },
           "Microsoft.EntityFrameworkCore.InMemory": {
             "target": "Package",
             "version": "[8.0.0, )"
