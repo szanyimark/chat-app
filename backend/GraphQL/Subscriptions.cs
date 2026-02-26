@@ -32,8 +32,15 @@ public class Subscription
     public async IAsyncEnumerable<User> UserOnline(
         Guid userId,
         [Service] IRedisPubSubService? redisPubSub,
+        [Service] IPresenceService? presenceService,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        // When user subscribes to their own presence, mark them as online
+        if (presenceService != null)
+        {
+            await presenceService.OnConnectedAsync(userId);
+        }
+
         if (redisPubSub == null)
         {
             // Redis not available - user online tracking won't work
