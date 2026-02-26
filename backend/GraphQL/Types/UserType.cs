@@ -16,6 +16,8 @@ public class UserType : ObjectType<User>
         descriptor.Field(u => u.Username).Type<NonNullType<StringType>>();
         descriptor.Field(u => u.Avatar).Type<StringType>();
         descriptor.Field(u => u.CreatedAt).Type<NonNullType<DateTimeType>>();
+        descriptor.Field(u => u.IsOnline).Type<NonNullType<BooleanType>>();
+        descriptor.Field(u => u.LastSeenAt).Type<DateTimeType>();
 
         descriptor.Field("conversations")
             .Type<NonNullType<ListType<NonNullType<ConversationGraphType>>>>()

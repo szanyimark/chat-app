@@ -26,6 +26,10 @@ public class User
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    public bool IsOnline { get; set; } = false;
+
+    public DateTime? LastSeenAt { get; set; }
+
     // Navigation properties
     public ICollection<ConversationMember> ConversationMembers { get; set; } = new List<ConversationMember>();
     public ICollection<Message> Messages { get; set; } = new List<Message>();
