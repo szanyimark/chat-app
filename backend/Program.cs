@@ -22,6 +22,10 @@ var appConfig = ConfigLoader.Load(builder.Configuration);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(appConfig.GetConnectionString()));
 
+// Register DbContextFactory for services that need it
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
+    options.UseNpgsql(appConfig.GetConnectionString()));
+
 // Register AppConfig
 builder.Services.AddSingleton(appConfig);
 
@@ -44,6 +48,27 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = appConfig.JwtIssuer,
             ValidAudience = appConfig.JwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(appConfig.JwtKey))
+        };
+        
+        // Add events to check token blacklist
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var tokenBlacklist = context.HttpContext.RequestServices.GetService<ITokenBlacklistService>();
+                if (tokenBlacklist != null)
+                {
+                    var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        if (await tokenBlacklist.IsBlacklistedAsync(token))
+                        {
+                            context.Fail("Token has been revoked");
+                        }
+                    }
+                }
+                await Task.CompletedTask;
+            }
         };
     });
 
@@ -71,6 +96,12 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(redisConnection);
 
 // Register Redis Pub/Sub Service
 builder.Services.AddSingleton<IRedisPubSubService, RedisPubSubService>();
+
+// Register Token Blacklist Service
+builder.Services.AddSingleton<ITokenBlacklistService, TokenBlacklistService>();
+
+// Register Presence Service
+builder.Services.AddSingleton<IPresenceService, PresenceService>();
 
 // Add CORS
 builder.Services.AddCors(options =>
