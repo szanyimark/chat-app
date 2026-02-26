@@ -58,14 +58,14 @@ public class RedisPubSubService : IRedisPubSubService
 
     public IAsyncEnumerable<Message> SubscribeToMessages(
         Guid conversationId,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
         return SubscribeToChannel<Message>($"chat:messages:{conversationId}", cancellationToken);
     }
 
     public IAsyncEnumerable<User> SubscribeToUserOnline(
         Guid userId,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
         return SubscribeToChannel<User>($"chat:online:{userId}", cancellationToken);
     }
