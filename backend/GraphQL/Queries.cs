@@ -1,6 +1,7 @@
 using ChatApp.Backend.Data;
 using ChatApp.Backend.Models;
 using HotChocolate;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChatApp.Backend.GraphQL;
@@ -45,8 +46,19 @@ public class Query
             .ToListAsync();
     }
 
-    public async Task<Conversation?> GetConversationById(Guid id, [Service] AppDbContext db)
+    public async Task<Conversation?> GetConversationById(Guid id, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
     {
+        var userIdClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            return null;
+
+        // Check if user is a member of the conversation
+        var isMember = await db.ConversationMembers
+            .AnyAsync(cm => cm.ConversationId == id && cm.UserId == userId);
+
+        if (!isMember)
+            return null;
+
         return await db.Conversations.FindAsync(id);
     }
 }

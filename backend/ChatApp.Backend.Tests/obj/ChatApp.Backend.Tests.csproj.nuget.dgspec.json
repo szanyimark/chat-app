@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.Tests\\ChatApp.Backend.Tests.csproj": {}
+    "c:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.Tests\\ChatApp.Backend.Tests.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.csproj": {
+    "c:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.csproj",
+        "projectUniqueName": "c:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.csproj",
         "projectName": "ChatApp.Backend",
-        "projectPath": "C:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.csproj",
+        "projectPath": "c:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.csproj",
         "packagesPath": "C:\\Users\\Sonrisa\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\obj\\",
+        "outputPath": "c:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Sonrisa\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -103,14 +103,14 @@
         }
       }
     },
-    "C:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.Tests\\ChatApp.Backend.Tests.csproj": {
+    "c:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.Tests\\ChatApp.Backend.Tests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.Tests\\ChatApp.Backend.Tests.csproj",
+        "projectUniqueName": "c:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.Tests\\ChatApp.Backend.Tests.csproj",
         "projectName": "ChatApp.Backend.Tests",
-        "projectPath": "C:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.Tests\\ChatApp.Backend.Tests.csproj",
+        "projectPath": "c:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.Tests\\ChatApp.Backend.Tests.csproj",
         "packagesPath": "C:\\Users\\Sonrisa\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.Tests\\obj\\",
+        "outputPath": "c:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.Tests\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Sonrisa\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -125,8 +125,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.csproj": {
-                "projectPath": "C:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.csproj"
+              "c:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.csproj": {
+                "projectPath": "c:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.csproj"
               }
             }
           }

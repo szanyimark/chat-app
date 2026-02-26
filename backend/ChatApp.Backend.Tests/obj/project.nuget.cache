@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "1Q4oS6i5jPk=",
+  "dgSpecHash": "9fYtSH5V9dk=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.Tests\\ChatApp.Backend.Tests.csproj",
+  "projectFilePath": "c:\\Users\\Sonrisa\\Documents\\Projects\\chat-app\\backend\\ChatApp.Backend.Tests\\ChatApp.Backend.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Sonrisa\\.nuget\\packages\\castle.core\\5.1.1\\castle.core.5.1.1.nupkg.sha512",
     "C:\\Users\\Sonrisa\\.nuget\\packages\\chillicream.nitro.app\\28.0.7\\chillicream.nitro.app.28.0.7.nupkg.sha512",
