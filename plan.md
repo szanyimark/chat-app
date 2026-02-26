@@ -230,7 +230,7 @@ type Subscription {
 ### Phase 3: Real-Time Features
 - [x] Set up GraphQL Subscriptions with WebSocket
 - [x] Implement message subscription
-- [ ] Add online presence tracking
+- [x] Add online presence tracking
 
 ### Phase 4: Frontend Core
 - [ ] Set up Angular with Apollo Client

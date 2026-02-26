@@ -7,6 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Exclude test project from main project -->
+    <Compile Remove="ChatApp.Backend.Tests\**" />
+    <Content Remove="ChatApp.Backend.Tests\**" />
+    <EmbeddedResource Remove="ChatApp.Backend.Tests\**" />
+    <None Remove="ChatApp.Backend.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.1.1" />
     <PackageReference Include="HotChocolate.AspNetCore" Version="15.1.12" />
     <PackageReference Include="HotChocolate.Data" Version="15.1.12" />
