@@ -419,4 +419,183 @@ public class GraphQLIntegrationTests
         Assert.False(result);
         mockPresenceService.Verify(x => x.ReceiveHeartbeatAsync(It.IsAny<Guid>()), Times.Never);
     }
+
+    [Fact]
+    public async Task JoinConversation_ShouldAddMember()
+    {
+        // Arrange
+        var db = CreateDbContext();
+        var userId = Guid.NewGuid();
+        
+        var user = new User
+        {
+            Id = userId,
+            Email = "user@test.com",
+            Username = "user",
+            Password = "hash"
+        };
+        
+        var conversationId = Guid.NewGuid();
+        var conversation = new Conversation
+        {
+            Id = conversationId,
+            Type = ConversationType.Group,
+            Name = "Test Group"
+        };
+        
+        db.Users.Add(user);
+        db.Conversations.Add(conversation);
+        await db.SaveChangesAsync();
+        
+        var httpContextAccessor = CreateMockHttpContextAccessor(userId);
+        var mutation = new Mutation();
+        
+        // Act
+        var result = await mutation.JoinConversation(conversationId, httpContextAccessor.Object, db);
+        
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(conversationId, result.Id);
+        
+        // Verify member was added
+        var member = await db.ConversationMembers.FirstOrDefaultAsync(cm => cm.ConversationId == conversationId && cm.UserId == userId);
+        Assert.NotNull(member);
+        Assert.Equal(MemberRole.Member, member.Role);
+    }
+
+    [Fact]
+    public async Task JoinConversation_AlreadyMember_ShouldThrowException()
+    {
+        // Arrange
+        var db = CreateDbContext();
+        var userId = Guid.NewGuid();
+        
+        var user = new User
+        {
+            Id = userId,
+            Email = "user@test.com",
+            Username = "user",
+            Password = "hash"
+        };
+        
+        var conversationId = Guid.NewGuid();
+        var conversation = new Conversation
+        {
+            Id = conversationId,
+            Type = ConversationType.Group,
+            Name = "Test Group"
+        };
+        
+        db.Users.Add(user);
+        db.Conversations.Add(conversation);
+        db.ConversationMembers.Add(new ConversationMember
+        {
+            ConversationId = conversationId,
+            UserId = userId,
+            Role = MemberRole.Member
+        });
+        await db.SaveChangesAsync();
+        
+        var httpContextAccessor = CreateMockHttpContextAccessor(userId);
+        var mutation = new Mutation();
+        
+        // Act & Assert
+        await Assert.ThrowsAsync<GraphQLException>(() => mutation.JoinConversation(conversationId, httpContextAccessor.Object, db));
+    }
+
+    [Fact]
+    public async Task JoinConversation_NotFound_ShouldThrowException()
+    {
+        // Arrange
+        var db = CreateDbContext();
+        var userId = Guid.NewGuid();
+        
+        var user = new User
+        {
+            Id = userId,
+            Email = "user@test.com",
+            Username = "user",
+            Password = "hash"
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        
+        var httpContextAccessor = CreateMockHttpContextAccessor(userId);
+        var mutation = new Mutation();
+        
+        // Act & Assert
+        await Assert.ThrowsAsync<GraphQLException>(() => mutation.JoinConversation(Guid.NewGuid(), httpContextAccessor.Object, db));
+    }
+
+    [Fact]
+    public async Task SendMessage_ShouldCreateMessage()
+    {
+        // Arrange
+        var db = CreateDbContext();
+        var userId = Guid.NewGuid();
+        var conversationId = Guid.NewGuid();
+        
+        var user = new User
+        {
+            Id = userId,
+            Email = "user@test.com",
+            Username = "user",
+            Password = "hash"
+        };
+        
+        var conversation = new Conversation
+        {
+            Id = conversationId,
+            Type = ConversationType.Group,
+            Name = "Test Group"
+        };
+        
+        db.Users.Add(user);
+        db.Conversations.Add(conversation);
+        await db.SaveChangesAsync();
+        
+        var httpContextAccessor = CreateMockHttpContextAccessor(userId);
+        var mutation = new Mutation();
+        
+        var input = new SendMessageInput(conversationId, "Hello, world!");
+        
+        // Act
+        var result = await mutation.SendMessage(input, httpContextAccessor.Object, db, null);
+        
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("Hello, world!", result.Content);
+        Assert.Equal(conversationId, result.ConversationId);
+        Assert.Equal(userId, result.SenderId);
+        
+        // Verify message was saved
+        var savedMessage = await db.Messages.FirstOrDefaultAsync(m => m.ConversationId == conversationId && m.SenderId == userId);
+        Assert.NotNull(savedMessage);
+        Assert.Equal("Hello, world!", savedMessage.Content);
+    }
+
+    [Fact]
+    public async Task SendMessage_WithoutAuthentication_ShouldThrowException()
+    {
+        // Arrange
+        var db = CreateDbContext();
+        var conversationId = Guid.NewGuid();
+        
+        var conversation = new Conversation
+        {
+            Id = conversationId,
+            Type = ConversationType.Group,
+            Name = "Test Group"
+        };
+        db.Conversations.Add(conversation);
+        await db.SaveChangesAsync();
+        
+        var httpContextAccessor = CreateMockHttpContextAccessor(null);
+        var mutation = new Mutation();
+        
+        var input = new SendMessageInput(conversationId, "Hello!");
+        
+        // Act & Assert
+        await Assert.ThrowsAsync<GraphQLException>(() => mutation.SendMessage(input, httpContextAccessor.Object, db, null));
+    }
 }
