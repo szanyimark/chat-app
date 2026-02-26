@@ -10,6 +10,7 @@ namespace ChatApp.Backend.Services;
 public interface IJwtService
 {
     string GenerateToken(User user);
+    DateTime? GetTokenExpiry(string token);
 }
 
 public class JwtService : IJwtService
@@ -44,5 +45,19 @@ public class JwtService : IJwtService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public DateTime? GetTokenExpiry(string token)
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            return jwtToken.ValidTo;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
