@@ -9,10 +9,7 @@ using ChatApp.Backend.GraphQL;
 using ChatApp.Backend.GraphQL.Types;
 using ChatApp.Backend.Services;
 using StackExchange.Redis;
-using DotNetEnv;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-
-Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 

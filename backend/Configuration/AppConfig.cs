@@ -1,3 +1,5 @@
+using DotNetEnv;
+
 namespace ChatApp.Backend.Configuration;
 
 public class AppConfig
@@ -28,6 +30,8 @@ public static class ConfigLoader
 {
     public static AppConfig Load(IConfiguration configuration)
     {
+        Env.Load();
+        
         return new AppConfig
         {
             // Database
