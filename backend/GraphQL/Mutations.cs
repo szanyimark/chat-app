@@ -40,7 +40,7 @@ public class Mutation
     }
 
     // Auth - Login
-    public async Task<AuthPayload> Login(LoginInput input, [Service] AppDbContext db, [Service] IJwtService jwtService)
+    public async Task<AuthPayload> Login(LoginInput input, [Service] AppDbContext db, [Service] IJwtService jwtService, [Service] IRedisPubSubService? redisPubSub)
     {
         var user = await db.Users.FirstOrDefaultAsync(u => u.Email == input.Email);
         if (user == null)
@@ -50,10 +50,67 @@ public class Mutation
         if (user.Password != passwordHash)
             throw new GraphQLException("Invalid credentials");
 
+        // Set user as online
+        user.IsOnline = true;
+        user.LastSeenAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        // Publish online status to Redis
+        if (redisPubSub != null)
+        {
+            await redisPubSub.PublishUserOnlineAsync(user.Id, user);
+        }
+
         // Generate real JWT token
         var token = jwtService.GenerateToken(user);
 
         return new AuthPayload(user, token);
+    }
+
+    // Auth - Logout
+    public async Task<bool> Logout([Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db, [Service] IRedisPubSubService? redisPubSub, [Service] ITokenBlacklistService? tokenBlacklist, [Service] IJwtService? jwtService)
+    {
+        var userIdClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            throw new GraphQLException("Not authenticated");
+
+        var user = await db.Users.FindAsync(userId);
+        if (user == null)
+            return false;
+
+        // Set user as offline
+        user.IsOnline = false;
+        user.LastSeenAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        // Publish offline status to Redis for presence tracking
+        if (redisPubSub != null)
+        {
+            await redisPubSub.PublishUserOnlineAsync(user.Id, user);
+        }
+
+        // Get the token from the Authorization header and add to blacklist
+        var authHeader = httpContextAccessor.HttpContext?.Request.Headers["Authorization"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+        {
+            var token = authHeader.Substring(7);
+            if (tokenBlacklist != null && jwtService != null)
+            {
+                // Get token expiry from JWT
+                var expiry = jwtService.GetTokenExpiry(token);
+                var expiryMinutes = expiry.HasValue
+                    ? (expiry.Value - DateTime.UtcNow).TotalMinutes
+                    : 60;
+                
+                // Ensure at least 1 minute remaining
+                if (expiryMinutes < 1)
+                    expiryMinutes = 1;
+                
+                await tokenBlacklist.AddToBlacklistAsync(token, TimeSpan.FromMinutes(expiryMinutes));
+            }
+        }
+
+        return true;
     }
 
     // Create Conversation
@@ -145,6 +202,21 @@ public class Mutation
         }
 
         return message;
+    }
+
+    // Heartbeat - client calls this every 30 seconds to stay online
+    public async Task<bool> Heartbeat([Service] IHttpContextAccessor httpContextAccessor, [Service] IPresenceService? presenceService)
+    {
+        var userIdClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            return false;
+
+        if (presenceService != null)
+        {
+            await presenceService.ReceiveHeartbeatAsync(userId);
+        }
+        
+        return true;
     }
 
     private static string HashPassword(string password)
