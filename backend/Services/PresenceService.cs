@@ -39,10 +39,11 @@ public class PresenceService : IPresenceService
 
     public async Task ReceiveHeartbeatAsync(Guid userId)
     {
+        var isNewUser = !IsUserOnline(userId);
         _lastHeartbeat[userId] = DateTime.UtcNow;
         
-        // If this is a new heartbeat, mark user as online
-        if (!IsUserOnline(userId))
+        // If this is a new heartbeat, mark user as online and publish to Redis
+        if (isNewUser)
         {
             await UpdateUserPresence(userId, true);
             
@@ -52,6 +53,11 @@ public class PresenceService : IPresenceService
                 var user = new User { Id = userId, IsOnline = true, LastSeenAt = DateTime.UtcNow };
                 await _redisPubSub.PublishUserOnlineAsync(userId, user);
             }
+        }
+        else
+        {
+            // Always update LastSeenAt even for existing users
+            await UpdateUserPresence(userId, true);
         }
         
         _logger.LogDebug("Received heartbeat from user {UserId}", userId);
