@@ -19,10 +19,7 @@ var appConfig = ConfigLoader.Load(builder.Configuration);
 // Add services to the container.
 
 // Configure Entity Framework Core with PostgreSQL
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(appConfig.GetConnectionString()));
-
-// Register DbContextFactory for services that need it
+// Use AddDbContextFactory instead of AddDbContext to avoid the scoped/singleton conflict
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseNpgsql(appConfig.GetConnectionString()));
 
@@ -90,8 +87,10 @@ builder.Services
     .AddSorting()
     .AddInMemorySubscriptions();
 
-// Configure Redis for pub/sub
-var redisConnection = ConnectionMultiplexer.Connect(appConfig.RedisConnectionString);
+// Configure Redis for pub/sub (abortConnect=false allows app to start if Redis isn't ready yet)
+var redisOptions = ConfigurationOptions.Parse(appConfig.RedisConnectionString);
+redisOptions.AbortOnConnectFail = false;
+var redisConnection = ConnectionMultiplexer.Connect(redisOptions);
 builder.Services.AddSingleton<IConnectionMultiplexer>(redisConnection);
 
 // Register Redis Pub/Sub Service
