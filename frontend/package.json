@@ -34,6 +34,8 @@
     "apollo-angular": "^13.0.0",
     "graphql": "^16.13.0",
     "graphql-ws": "^6.0.7",
+    "primeicons": "^7.0.0",
+    "primeng": "^21.1.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

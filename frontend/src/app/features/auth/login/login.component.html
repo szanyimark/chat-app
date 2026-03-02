@@ -1,0 +1,54 @@
+<div class="login-container">
+  <div class="login-card">
+    <h1>Login</h1>
+    
+    @if (error()) {
+      <p-message severity="error" [text]="error()"></p-message>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="field">
+        <label for="email">Email</label>
+        <input 
+          pInputText 
+          id="email" 
+          formControlName="email"
+          class="w-full"
+        />
+        @if (form.get('email')?.touched && form.get('email')?.errors?.['required']) {
+          <small class="p-error">Email is required</small>
+        }
+        @if (form.get('email')?.touched && form.get('email')?.errors?.['email']) {
+          <small class="p-error">Invalid email format</small>
+        }
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input 
+          pInputText 
+          type="password"
+          id="password" 
+          formControlName="password"
+          class="w-full"
+        />
+        @if (form.get('password')?.touched && form.get('password')?.errors?.['required']) {
+          <small class="p-error">Password is required</small>
+        }
+      </div>
+
+      <button 
+        pButton 
+        type="submit" 
+        [disabled]="loading()"
+        class="w-full"
+      >
+        {{ loading() ? 'Logging in...' : 'Login' }}
+      </button>
+    </form>
+
+    <p class="register-link">
+      Don't have an account? <a routerLink="/register">Register</a>
+    </p>
+  </div>
+</div>
