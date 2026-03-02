@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "codegen": "graphql-codegen --config codegen.ts"
   },
   "prettier": {
     "printWidth": 100,
@@ -32,6 +33,7 @@
     "@apollo/client": "^4.1.6",
     "apollo-angular": "^13.0.0",
     "graphql": "^16.13.0",
+    "graphql-ws": "^6.0.7",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -39,6 +41,10 @@
     "@angular/build": "^21.1.4",
     "@angular/cli": "^21.1.4",
     "@angular/compiler-cli": "^21.1.0",
+    "@graphql-codegen/cli": "^6.1.2",
+    "@graphql-codegen/typescript": "^5.0.8",
+    "@graphql-codegen/typescript-apollo-angular": "^4.0.1",
+    "@graphql-codegen/typescript-operations": "^5.0.8",
     "typescript": "~5.9.2"
   }
 }

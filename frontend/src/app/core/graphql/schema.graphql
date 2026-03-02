@@ -1,0 +1,80 @@
+type Query {
+  me: User
+  users: [User!]!
+  user(id: ID!): User
+  myConversations: [Conversation!]!
+  conversation(id: ID!): Conversation
+}
+
+type Mutation {
+  register(input: RegisterInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
+  createConversation(input: CreateConversationInput!): Conversation!
+  joinConversation(id: ID!): Conversation!
+  sendMessage(input: SendMessageInput!): Message!
+}
+
+type Subscription {
+  messageSent(conversationId: ID!): Message!
+  userOnline(userId: ID!): User!
+}
+
+type User {
+  id: ID!
+  email: String!
+  username: String!
+  avatar: String
+  createdAt: DateTime!
+  isOnline: Boolean!
+  lastSeenAt: DateTime
+}
+
+type Conversation {
+  id: ID!
+  type: ConversationType!
+  name: String
+  members: [User!]!
+  messages(limit: Int): [Message!]!
+  createdAt: DateTime!
+}
+
+type Message {
+  id: ID!
+  conversation: Conversation!
+  sender: User!
+  content: String!
+  createdAt: DateTime!
+}
+
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
+enum ConversationType {
+  PRIVATE
+  GROUP
+}
+
+input RegisterInput {
+  email: String!
+  username: String!
+  password: String!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input CreateConversationInput {
+  type: ConversationType!
+  name: String
+}
+
+input SendMessageInput {
+  conversationId: ID!
+  content: String!
+}
+
+scalar DateTime
