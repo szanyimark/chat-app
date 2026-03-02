@@ -251,52 +251,114 @@ type Subscription {
 
 ## File Structure
 
+### Backend (.NET)
 ```
-chat-app/
-├── docker-compose.yml
-├── nginx/
-│   └── nginx.conf
-├── backend/
-│   ├── ChatApp.Backend.csproj
-│   ├── Program.cs
-│   ├── appsettings.json
-│   ├── .env
-│   ├── Configuration/
-│   │   └── AppConfig.cs
-│   ├── Models/
-│   │   ├── User.cs
-│   │   ├── Conversation.cs
-│   │   ├── Message.cs
-│   │   └── ConversationMember.cs
-│   ├── Data/
-│   │   └── AppDbContext.cs
-│   ├── GraphQL/
-│   │   ├── Types/
-│   │   │   ├── UserType.cs
-│   │   │   ├── ConversationType.cs
-│   │   │   ├── ConversationMemberType.cs
-│   │   │   └── MessageType.cs
-│   │   ├── Queries.cs
-│   │   ├── Mutations.cs
-│   │   └── Subscriptions.cs
-│   ├── Services/
-│   │   ├── JwtService.cs
-│   │   └── RedisPubSubService.cs
-│   └── Properties/
-│       └── launchSettings.json
-└── frontend/
-    ├── src/
-    │   ├── app/
-    │   │   ├── components/
-    │   │   ├── pages/
-    │   │   ├── services/
-    │   │   ├── graphql/
-    │   │   └── app.component.ts
-    │   ├── environments/
-    │   └── main.ts
-    ├── angular.json
-    └── package.json
+backend/
+├── ChatApp.Backend.csproj
+├── Program.cs
+├── appsettings.json
+├── .env
+├── Configuration/
+│   └── AppConfig.cs
+├── Models/
+│   ├── User.cs
+│   ├── Conversation.cs
+│   ├── Message.cs
+│   └── ConversationMember.cs
+├── Data/
+│   └── AppDbContext.cs
+├── GraphQL/
+│   ├── Types/
+│   │   ├── UserType.cs
+│   │   ├── ConversationType.cs
+│   │   ├── ConversationMemberType.cs
+│   │   └── MessageType.cs
+│   ├── Queries.cs
+│   ├── Mutations.cs
+│   └── Subscriptions.cs
+├── Services/
+│   ├── JwtService.cs
+│   ├── PresenceService.cs
+│   ├── RedisPubSubService.cs
+│   └── TokenBlacklistService.cs
+└── Properties/
+    └── launchSettings.json
 ```
+
+### Frontend (Angular 17+)
+```
+frontend/
+├── src/
+│   ├── app/
+│   │   ├── core/                        # Singleton services, guards, interceptors
+│   │   │   ├── auth/
+│   │   │   │   ├── auth.service.ts      # Login, register, logout, token management
+│   │   │   │   └── auth.guard.ts        # Route protection
+│   │   │   ├── interceptors/
+│   │   │   │   └── auth.interceptor.ts  # Attaches JWT token to requests
+│   │   │   └── graphql/
+│   │   │       ├── apollo.config.ts     # Apollo Client setup
+│   │   │       ├── queries.ts           # GraphQL queries
+│   │   │       ├── mutations.ts         # GraphQL mutations
+│   │   │       └── subscriptions.ts     # GraphQL subscriptions
+│   │   │
+│   │   ├── features/                    # Smart components (Pages)
+│   │   │   ├── auth/
+│   │   │   │   ├── login/
+│   │   │   │   │   ├── login.component.ts
+│   │   │   │   │   └── login.component.html
+│   │   │   │   └── register/
+│   │   │   │       ├── register.component.ts
+│   │   │   │       └── register.component.html
+│   │   │   │
+│   │   │   └── chat/
+│   │   │       ├── chat-list/           # List of conversations
+│   │   │       │   ├── chat-list.component.ts
+│   │   │       │   └── chat-list.component.html
+│   │   │       ├── chat-room/           # The actual chat window
+│   │   │       │   ├── chat-room.component.ts
+│   │   │       │   └── chat-room.component.html
+│   │   │       └── chat-routing.routes.ts
+│   │   │
+│   │   ├── shared/                      # Reusable components, pipes, directives
+│   │   │   ├── components/
+│   │   │   │   ├── navbar/
+│   │   │   │   │   ├── navbar.component.ts
+│   │   │   │   │   └── navbar.component.html
+│   │   │   │   └── loader/
+│   │   │   │       ├── loader.component.ts
+│   │   │   │       └── loader.component.html
+│   │   │   ├── pipes/
+│   │   │   │   └── time-ago.pipe.ts     # "5 mins ago"
+│   │   │   └── models/
+│   │   │       ├── user.model.ts
+│   │   │       ├── message.model.ts
+│   │   │       └── conversation.model.ts
+│   │   │
+│   │   ├── app.component.ts             # Root component
+│   │   ├── app.config.ts                # Angular 17+ config (providers)
+│   │   ├── app.routes.ts                # Routing
+│   │   └── app.html                     # Root template
+│   │
+│   ├── assets/
+│   ├── environments/
+│   │   ├── environment.ts
+│   │   └── environment.prod.ts
+│   ├── styles.scss                      # Global styles
+│   └── main.ts
+│
+├── angular.json
+├── package.json
+└── tsconfig.json
+```
+
+### Architecture Principles
+
+| Layer | Contents | Purpose |
+|-------|----------|---------|
+| `core/` | Services, Guards, Interceptors | App-wide singletons, loaded once |
+| `features/` | Page components | Smart components connected to services |
+| `shared/` | Components, Pipes, Models | Dumb/reusable components |
 
 ---
 
