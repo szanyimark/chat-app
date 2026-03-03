@@ -14,6 +14,7 @@ public class UserType : ObjectType<User>
         descriptor.Field(u => u.Id).Type<NonNullType<IdType>>();
         descriptor.Field(u => u.Email).Type<NonNullType<StringType>>();
         descriptor.Field(u => u.Username).Type<NonNullType<StringType>>();
+        descriptor.Field(u => u.Tag).Type<NonNullType<StringType>>();
         descriptor.Field(u => u.Avatar).Type<StringType>();
         descriptor.Field(u => u.CreatedAt).Type<NonNullType<DateTimeType>>();
         descriptor.Field(u => u.IsOnline).Type<NonNullType<BooleanType>>();

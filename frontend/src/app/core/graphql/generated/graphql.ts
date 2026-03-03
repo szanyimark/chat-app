@@ -152,6 +152,7 @@ export type User = {
   id: Scalars['ID']['output'];
   isOnline: Scalars['Boolean']['output'];
   lastSeenAt?: Maybe<Scalars['DateTime']['output']>;
+  tag: Scalars['String']['output'];
   username: Scalars['String']['output'];
 };
 
@@ -210,14 +211,14 @@ export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User',
 export type GetMyConversationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMyConversationsQuery = { __typename?: 'Query', myConversations: Array<{ __typename?: 'Conversation', id: string, type: ConversationType, name?: string | null, createdAt: any, members: Array<{ __typename?: 'User', id: string, username: string, avatar?: string | null, isOnline: boolean }> }> };
+export type GetMyConversationsQuery = { __typename?: 'Query', myConversations: Array<{ __typename?: 'Conversation', id: string, type: ConversationType, name?: string | null, avatar?: string | null, createdAt: any, members: Array<{ __typename?: 'User', id: string, username: string, avatar?: string | null, isOnline: boolean }>, messages: Array<{ __typename?: 'Message', id: string, content: string, createdAt: any, sender: { __typename?: 'User', id: string, username: string } }> }> };
 
 export type GetConversationQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetConversationQuery = { __typename?: 'Query', conversation?: { __typename?: 'Conversation', id: string, type: ConversationType, name?: string | null, createdAt: any, members: Array<{ __typename?: 'User', id: string, username: string, avatar?: string | null, isOnline: boolean }>, messages: Array<{ __typename?: 'Message', id: string, content: string, createdAt: any, sender: { __typename?: 'User', id: string, username: string, avatar?: string | null } }> } | null };
+export type GetConversationQuery = { __typename?: 'Query', conversation?: { __typename?: 'Conversation', id: string, type: ConversationType, name?: string | null, avatar?: string | null, createdAt: any, members: Array<{ __typename?: 'User', id: string, username: string, avatar?: string | null, isOnline: boolean }>, messages: Array<{ __typename?: 'Message', id: string, content: string, createdAt: any, sender: { __typename?: 'User', id: string, username: string, avatar?: string | null } }> } | null };
 
 export type MessageSentSubscriptionVariables = Exact<{
   conversationId: Scalars['ID']['input'];
@@ -447,12 +448,22 @@ export const GetMyConversationsDocument = gql`
     id
     type
     name
+    avatar
     createdAt
     members {
       id
       username
       avatar
       isOnline
+    }
+    messages(limit: 1) {
+      id
+      content
+      createdAt
+      sender {
+        id
+        username
+      }
     }
   }
 }
@@ -474,6 +485,7 @@ export const GetConversationDocument = gql`
     id
     type
     name
+    avatar
     createdAt
     members {
       id

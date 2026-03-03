@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Linq;
 using ChatApp.Backend.Data;
 using ChatApp.Backend.Models;
 using ChatApp.Backend.Services;
@@ -23,10 +24,19 @@ public class Mutation
         // Hash password
         var passwordHash = HashPassword(input.Password);
 
+        // Generate tag and ensure uniqueness
+        var baseTag = GenerateUserTag(input.Username);
+        var tag = baseTag;
+        while (await db.Users.AnyAsync(u => u.Tag == tag))
+        {
+            tag = $"{baseTag}_{Guid.NewGuid().ToString("N")[..8]}";
+        }
+
         var user = new User
         {
             Email = input.Email,
             Username = input.Username,
+            Tag = tag,
             Password = passwordHash
         };
 
@@ -217,6 +227,25 @@ public class Mutation
         }
         
         return true;
+    }
+
+    private static string GenerateUserTag(string username)
+    {
+        // tag format: @username_optionalUUID
+        // - always starts with '@'
+        // - username is normalized to [a-z0-9_]
+        // - if the base tag is already taken, append _ + 8-char UUID suffix
+        var normalized = new string(username
+            .Trim()
+            .ToLowerInvariant()
+            .Select(ch => char.IsLetterOrDigit(ch) ? ch : '_')
+            .ToArray());
+
+        normalized = string.IsNullOrWhiteSpace(normalized) ? "user" : normalized;
+
+        // NOTE: uniqueness is enforced in Register() by checking the DB.
+        // This helper only generates the base; Register() will retry with suffix if needed.
+        return $"@{normalized}";
     }
 
     private static string HashPassword(string password)

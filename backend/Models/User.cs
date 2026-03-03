@@ -15,6 +15,11 @@ public class User
     [MaxLength(50)]
     public string Username { get; set; } = string.Empty;
 
+    // Public handle, generated on registration: @username_optionalUUID
+    [Required]
+    [MaxLength(80)]
+    public string Tag { get; set; } = string.Empty;
+
     [Required]
     [MaxLength(255)]
     public string Password { get; set; } = string.Empty;
