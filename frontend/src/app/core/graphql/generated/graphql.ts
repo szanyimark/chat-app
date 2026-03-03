@@ -50,6 +50,23 @@ export type CreateConversationInput = {
   type: ConversationType;
 };
 
+export type FriendRequest = {
+  __typename?: 'FriendRequest';
+  createdAt: Scalars['DateTime']['output'];
+  fromUser: User;
+  id: Scalars['ID']['output'];
+  status: FriendRequestStatus;
+  toUser: User;
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+export enum FriendRequestStatus {
+  Accepted = 'ACCEPTED',
+  Cancelled = 'CANCELLED',
+  Pending = 'PENDING',
+  Rejected = 'REJECTED'
+}
+
 export type LoginInput = {
   email: Scalars['String']['input'];
   password: Scalars['String']['input'];
@@ -66,11 +83,20 @@ export type Message = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  cancelFriendRequest: Scalars['Boolean']['output'];
   createConversation: Conversation;
   joinConversation: Conversation;
   login: AuthPayload;
   register: AuthPayload;
+  removeFriend: Scalars['Boolean']['output'];
+  respondToFriendRequest: Scalars['Boolean']['output'];
+  sendFriendRequest: FriendRequest;
   sendMessage: Message;
+};
+
+
+export type MutationCancelFriendRequestArgs = {
+  requestId: Scalars['ID']['input'];
 };
 
 
@@ -94,6 +120,22 @@ export type MutationRegisterArgs = {
 };
 
 
+export type MutationRemoveFriendArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationRespondToFriendRequestArgs = {
+  accept: Scalars['Boolean']['input'];
+  requestId: Scalars['ID']['input'];
+};
+
+
+export type MutationSendFriendRequestArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
 export type MutationSendMessageArgs = {
   input: SendMessageInput;
 };
@@ -103,6 +145,9 @@ export type Query = {
   conversation?: Maybe<Conversation>;
   me?: Maybe<User>;
   myConversations: Array<Conversation>;
+  myFriends: Array<User>;
+  myIncomingFriendRequests: Array<FriendRequest>;
+  myOutgoingFriendRequests: Array<FriendRequest>;
   user?: Maybe<User>;
   users: Array<User>;
 };

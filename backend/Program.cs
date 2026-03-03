@@ -7,6 +7,7 @@ using ChatApp.Backend.Configuration;
 using ChatApp.Backend.Data;
 using ChatApp.Backend.GraphQL;
 using ChatApp.Backend.GraphQL.Types;
+using ChatApp.Backend.Models;
 using ChatApp.Backend.Services;
 using StackExchange.Redis;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -78,6 +79,7 @@ builder.Services
     .AddMutationType<Mutation>()
     .AddSubscriptionType<Subscription>()
     .AddType<UserType>()
+    .AddType<FriendRequestType>()
     .AddType<ConversationGraphType>()
     .AddType<MessageType>()
     .AddType<ConversationMemberType>()

@@ -13,6 +13,8 @@ public class AppDbContext : DbContext
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ConversationMember> ConversationMembers => Set<ConversationMember>();
     public DbSet<Message> Messages => Set<Message>();
+    public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
+    public DbSet<Friendship> Friendships => Set<Friendship>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,6 +25,39 @@ public class AppDbContext : DbContext
         {
             entity.HasIndex(u => u.Email).IsUnique();
             entity.HasIndex(u => u.Username).IsUnique();
+            entity.HasIndex(u => u.Tag).IsUnique();
+        });
+
+        // FriendRequest configuration
+        modelBuilder.Entity<FriendRequest>(entity =>
+        {
+            entity.HasIndex(fr => new { fr.FromUserId, fr.ToUserId }).IsUnique();
+
+            entity.HasOne(fr => fr.FromUser)
+                .WithMany()
+                .HasForeignKey(fr => fr.FromUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(fr => fr.ToUser)
+                .WithMany()
+                .HasForeignKey(fr => fr.ToUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Friendship configuration
+        modelBuilder.Entity<Friendship>(entity =>
+        {
+            entity.HasIndex(f => new { f.UserId, f.FriendId }).IsUnique();
+
+            entity.HasOne(f => f.User)
+                .WithMany()
+                .HasForeignKey(f => f.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(f => f.Friend)
+                .WithMany()
+                .HasForeignKey(f => f.FriendId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Conversation configuration

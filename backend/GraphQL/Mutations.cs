@@ -3,6 +3,7 @@ using System.Text;
 using System.Linq;
 using ChatApp.Backend.Data;
 using ChatApp.Backend.Models;
+using Microsoft.AspNetCore.Http;
 using ChatApp.Backend.Services;
 using HotChocolate;
 using Microsoft.EntityFrameworkCore;
@@ -212,6 +213,141 @@ public class Mutation
         }
 
         return message;
+    }
+
+    // Friends - Send request
+    public async Task<FriendRequest> SendFriendRequest(Guid userId, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
+    {
+        var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId))
+            throw new GraphQLException("Not authenticated");
+
+        if (meId == userId)
+            throw new GraphQLException("Cannot friend yourself");
+
+        // Ensure target exists
+        var targetExists = await db.Users.AnyAsync(u => u.Id == userId);
+        if (!targetExists)
+            throw new GraphQLException("User not found");
+
+        // Already friends?
+        var alreadyFriends = await db.Friendships.AnyAsync(f => f.UserId == meId && f.FriendId == userId);
+        if (alreadyFriends)
+            throw new GraphQLException("Already friends");
+
+        // Existing request either direction?
+        var existing = await db.FriendRequests
+            .FirstOrDefaultAsync(fr =>
+                (fr.FromUserId == meId && fr.ToUserId == userId) ||
+                (fr.FromUserId == userId && fr.ToUserId == meId));
+
+        if (existing != null)
+        {
+            if (existing.Status == FriendRequestStatus.Pending)
+                throw new GraphQLException("Friend request already pending");
+
+            // If previously rejected/cancelled, allow re-send by resetting
+            existing.FromUserId = meId;
+            existing.ToUserId = userId;
+            existing.Status = FriendRequestStatus.Pending;
+            existing.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+            return existing;
+        }
+
+        var request = new FriendRequest
+        {
+            FromUserId = meId,
+            ToUserId = userId,
+            Status = FriendRequestStatus.Pending,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        db.FriendRequests.Add(request);
+        await db.SaveChangesAsync();
+        return request;
+    }
+
+    // Friends - Cancel my outgoing request
+    public async Task<bool> CancelFriendRequest(Guid requestId, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
+    {
+        var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId))
+            throw new GraphQLException("Not authenticated");
+
+        var req = await db.FriendRequests.FindAsync(requestId);
+        if (req == null)
+            return false;
+
+        if (req.FromUserId != meId)
+            throw new GraphQLException("Not allowed");
+
+        if (req.Status != FriendRequestStatus.Pending)
+            return false;
+
+        req.Status = FriendRequestStatus.Cancelled;
+        req.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        return true;
+    }
+
+    // Friends - Respond to incoming request
+    public async Task<bool> RespondToFriendRequest(Guid requestId, bool accept, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
+    {
+        var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId))
+            throw new GraphQLException("Not authenticated");
+
+        var req = await db.FriendRequests.FindAsync(requestId);
+        if (req == null)
+            return false;
+
+        if (req.ToUserId != meId)
+            throw new GraphQLException("Not allowed");
+
+        if (req.Status != FriendRequestStatus.Pending)
+            return false;
+
+        if (!accept)
+        {
+            req.Status = FriendRequestStatus.Rejected;
+            req.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+            return true;
+        }
+
+        // Accept: mark request + create friendships (two directed edges)
+        req.Status = FriendRequestStatus.Accepted;
+        req.UpdatedAt = DateTime.UtcNow;
+
+        if (!await db.Friendships.AnyAsync(f => f.UserId == req.FromUserId && f.FriendId == req.ToUserId))
+            db.Friendships.Add(new Friendship { UserId = req.FromUserId, FriendId = req.ToUserId });
+
+        if (!await db.Friendships.AnyAsync(f => f.UserId == req.ToUserId && f.FriendId == req.FromUserId))
+            db.Friendships.Add(new Friendship { UserId = req.ToUserId, FriendId = req.FromUserId });
+
+        await db.SaveChangesAsync();
+        return true;
+    }
+
+    // Friends - Remove friend
+    public async Task<bool> RemoveFriend(Guid userId, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
+    {
+        var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId))
+            throw new GraphQLException("Not authenticated");
+
+        var edges = await db.Friendships
+            .Where(f => (f.UserId == meId && f.FriendId == userId) || (f.UserId == userId && f.FriendId == meId))
+            .ToListAsync();
+
+        if (edges.Count == 0)
+            return false;
+
+        db.Friendships.RemoveRange(edges);
+        await db.SaveChangesAsync();
+        return true;
     }
 
     // Heartbeat - client calls this every 30 seconds to stay online

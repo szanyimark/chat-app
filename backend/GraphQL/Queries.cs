@@ -3,6 +3,7 @@ using ChatApp.Backend.Models;
 using HotChocolate;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 
 namespace ChatApp.Backend.GraphQL;
 
@@ -22,6 +23,47 @@ public class Query
     public async Task<List<User>> GetUsers([Service] AppDbContext db)
     {
         return await db.Users.ToListAsync();
+    }
+
+    // Friends
+    public async Task<List<User>> GetMyFriends([Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
+    {
+        var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId))
+            return new List<User>();
+
+        var friendIds = await db.Friendships
+            .Where(f => f.UserId == meId)
+            .Select(f => f.FriendId)
+            .ToListAsync();
+
+        return await db.Users
+            .Where(u => friendIds.Contains(u.Id))
+            .ToListAsync();
+    }
+
+    public async Task<List<FriendRequest>> GetMyIncomingFriendRequests([Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
+    {
+        var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId))
+            return new List<FriendRequest>();
+
+        return await db.FriendRequests
+            .Where(fr => fr.ToUserId == meId && fr.Status == FriendRequestStatus.Pending)
+            .OrderByDescending(fr => fr.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<List<FriendRequest>> GetMyOutgoingFriendRequests([Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
+    {
+        var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId))
+            return new List<FriendRequest>();
+
+        return await db.FriendRequests
+            .Where(fr => fr.FromUserId == meId && fr.Status == FriendRequestStatus.Pending)
+            .OrderByDescending(fr => fr.CreatedAt)
+            .ToListAsync();
     }
 
     public async Task<User?> GetUserById(Guid id, [Service] AppDbContext db)

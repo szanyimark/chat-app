@@ -4,6 +4,10 @@ type Query {
   user(id: ID!): User
   myConversations: [Conversation!]!
   conversation(id: ID!): Conversation
+
+  myFriends: [User!]!
+  myIncomingFriendRequests: [FriendRequest!]!
+  myOutgoingFriendRequests: [FriendRequest!]!
 }
 
 type Mutation {
@@ -12,6 +16,11 @@ type Mutation {
   createConversation(input: CreateConversationInput!): Conversation!
   joinConversation(id: ID!): Conversation!
   sendMessage(input: SendMessageInput!): Message!
+
+  sendFriendRequest(userId: ID!): FriendRequest!
+  cancelFriendRequest(requestId: ID!): Boolean!
+  respondToFriendRequest(requestId: ID! accept: Boolean!): Boolean!
+  removeFriend(userId: ID!): Boolean!
 }
 
 type Subscription {
@@ -77,6 +86,22 @@ input CreateConversationInput {
 input SendMessageInput {
   conversationId: ID!
   content: String!
+}
+
+type FriendRequest {
+  id: ID!
+  status: FriendRequestStatus!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  fromUser: User!
+  toUser: User!
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
 }
 
 scalar DateTime
