@@ -3,7 +3,7 @@
     <h1>Login</h1>
     
     @if (error()) {
-      <p-message severity="error" [text]="error()"></p-message>
+      <p-message severity="error">{{error()}}</p-message>
     }
 
     <form [formGroup]="form" (ngSubmit)="onSubmit()">

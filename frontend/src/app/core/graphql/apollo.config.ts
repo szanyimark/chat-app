@@ -5,7 +5,9 @@ import { HttpLink } from '@apollo/client/link/http';
 import { SetContextLink } from '@apollo/client/link/context';
 
 const httpLink = new HttpLink({
-  uri: 'http://localhost:5000/graphql',
+  // This backend exposes the GraphQL HTTP executor at /graphql/schema
+  // (GET /graphql/schema returns SDL; GET/POST with `?query=` executes operations)
+  uri: 'http://localhost:5000/graphql/schema',
 });
 
 const authLink = new SetContextLink((prevContext, operation) => {

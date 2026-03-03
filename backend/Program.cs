@@ -126,6 +126,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseRouting();
+
 // Apply migrations automatically
 using (var scope = app.Services.CreateScope())
 {

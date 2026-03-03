@@ -2,19 +2,15 @@ import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { MessageModule } from 'primeng/message';
 import { AuthService } from '../../../core/auth/auth.service';
-
-// PrimeNG imports
-import { InputText } from 'primeng/inputtext';
-import { Button } from 'primeng/button';
-import { Message } from 'primeng/message';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, InputText, Button, Message],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MessageModule],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.scss'
+  styleUrls: ['./login.component.scss']
 })
 export class LoginComponent {
   private authService = inject(AuthService);
@@ -42,9 +38,9 @@ export class LoginComponent {
       password: this.form.value.password!
     }).subscribe({
       next: () => {
-        this.router.navigate(['/chat']);
+        this.router.navigate(['/chats']);
       },
-      error: (err) => {
+      error: () => {
         this.error.set('Invalid email or password');
         this.loading.set(false);
       }

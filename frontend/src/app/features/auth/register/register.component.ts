@@ -2,19 +2,15 @@ import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { MessageModule } from 'primeng/message';
 import { AuthService } from '../../../core/auth/auth.service';
-
-// PrimeNG imports
-import { InputText } from 'primeng/inputtext';
-import { Button } from 'primeng/button';
-import { Message } from 'primeng/message';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, InputText, Button, Message],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MessageModule],
   templateUrl: './register.component.html',
-  styleUrl: './register.component.scss'
+  styleUrls: ['./register.component.scss']
 })
 export class RegisterComponent {
   private authService = inject(AuthService);
@@ -50,9 +46,9 @@ export class RegisterComponent {
       password: this.form.value.password!
     }).subscribe({
       next: () => {
-        this.router.navigate(['/chat']);
+        this.router.navigate(['/chats']);
       },
-      error: (err) => {
+      error: () => {
         this.error.set('Registration failed. Please try again.');
         this.loading.set(false);
       }

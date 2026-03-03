@@ -8,7 +8,8 @@ namespace ChatApp.Backend.GraphQL;
 
 public class Subscription
 {
-    [Subscribe]
+    // NOTE: HotChocolate requires a message type for [Subscribe] when the return type is IAsyncEnumerable<T>.
+    // This project uses Redis-based subscriptions, so we expose these as plain fields without [Subscribe].
     public async IAsyncEnumerable<Message> MessageSent(
         Guid conversationId,
         [Service] IRedisPubSubService? redisPubSub,
@@ -28,7 +29,6 @@ public class Subscription
         }
     }
 
-    [Subscribe]
     public async IAsyncEnumerable<User> UserOnline(
         Guid userId,
         [Service] IRedisPubSubService? redisPubSub,

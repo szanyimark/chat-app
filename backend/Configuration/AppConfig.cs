@@ -64,7 +64,8 @@ public static class ConfigLoader
         return new AppConfig
         {
             // Database
-            DbHost = GetValue("DB_HOST", "DB_HOST", "postgres"),
+            // Default to localhost for local `dotnet run` (docker-compose will override via env vars)
+            DbHost = GetValue("DB_HOST", "DB_HOST", "localhost"),
             DbPort = GetValue("DB_PORT", "DB_PORT", "5432"),
             DbName = GetValue("DB_NAME", "DB_NAME", "chatapp"),
             DbUser = GetValue("DB_USER", "DB_USER", "chatapp"),
