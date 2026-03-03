@@ -33,6 +33,7 @@ type Conversation {
   id: ID!
   type: ConversationType!
   name: String
+  avatar: String
   members: [User!]!
   messages(limit: Int): [Message!]!
   createdAt: DateTime!

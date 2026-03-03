@@ -14,6 +14,7 @@ public class ConversationGraphType : ObjectType<Conversation>
         descriptor.Field(c => c.Id).Type<NonNullType<IdType>>();
         descriptor.Field(c => c.Type).Type<NonNullType<ConversationTypeEnum>>();
         descriptor.Field(c => c.Name).Type<StringType>();
+        descriptor.Field(c => c.Avatar).Type<StringType>();
         descriptor.Field(c => c.CreatedAt).Type<NonNullType<DateTimeType>>();
 
         descriptor.Field("members")

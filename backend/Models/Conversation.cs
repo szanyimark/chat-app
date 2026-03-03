@@ -18,6 +18,9 @@ public class Conversation
     [MaxLength(100)]
     public string? Name { get; set; }
 
+    [MaxLength(500)]
+    public string? Avatar { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

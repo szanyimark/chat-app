@@ -26,6 +26,7 @@ export type AuthPayload = {
 
 export type Conversation = {
   __typename?: 'Conversation';
+  avatar?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
   members: Array<User>;

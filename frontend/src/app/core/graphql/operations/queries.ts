@@ -48,12 +48,22 @@ export const GET_MY_CONVERSATIONS = gql`
       id
       type
       name
+      avatar
       createdAt
       members {
         id
         username
         avatar
         isOnline
+      }
+      messages(limit: 1) {
+        id
+        content
+        createdAt
+        sender {
+          id
+          username
+        }
       }
     }
   }
@@ -65,6 +75,7 @@ export const GET_CONVERSATION = gql`
       id
       type
       name
+      avatar
       createdAt
       members {
         id

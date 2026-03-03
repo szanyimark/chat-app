@@ -1,0 +1,49 @@
+<div class="chat-list-container">
+  <h2>Chats</h2>
+  
+  @if (loading()) {
+    <div class="loading">Loading conversations...</div>
+  }
+  
+  @if (error()) {
+    <div class="error">{{ error() }}</div>
+  }
+  
+  @if (!loading() && !error() && conversations().length === 0) {
+    <div class="empty">No conversations yet</div>
+  }
+  
+  <div class="conversations-list">
+    @for (conversation of conversations(); track conversation.id) {
+      <div class="conversation-item" (click)="openChat(conversation.id)">
+        <div class="avatar">
+          @if (getConversationAvatar(conversation); as avatar) {
+            <img [src]="avatar" [alt]="getConversationName(conversation)">
+          } @else {
+            <div class="avatar-placeholder">
+              {{ getInitials(getConversationName(conversation)) }}
+            </div>
+          }
+        </div>
+        
+        <div class="conversation-info">
+          <div class="conversation-header">
+            <span class="conversation-name">{{ getConversationName(conversation) }}</span>
+            @if (conversation.lastMessage) {
+              <span class="message-time">{{ formatMessageTime(conversation.lastMessage.createdAt) }}</span>
+            }
+          </div>
+          
+          @if (conversation.lastMessage) {
+            <div class="last-message">
+              <span class="sender">{{ conversation.lastMessage.sender.username }}:</span>
+              <span class="content">{{ conversation.lastMessage.content }}</span>
+            </div>
+          } @else {
+            <div class="last-message empty">No messages yet</div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
