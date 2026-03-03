@@ -206,64 +206,79 @@ export type RegisterMutationVariables = Exact<{
 }>;
 
 
-export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'AuthPayload', token: string, user: { __typename?: 'User', id: string, email: string, username: string, avatar?: string | null, createdAt: any, isOnline: boolean, lastSeenAt?: any | null } } };
+export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'AuthPayload', token: string, user: { __typename?: 'User', id: string, email: string, username: string, tag: string, avatar?: string | null, createdAt: any, isOnline: boolean, lastSeenAt?: any | null } } };
 
 export type LoginMutationVariables = Exact<{
   input: LoginInput;
 }>;
 
 
-export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'AuthPayload', token: string, user: { __typename?: 'User', id: string, email: string, username: string, avatar?: string | null, createdAt: any, isOnline: boolean, lastSeenAt?: any | null } } };
+export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'AuthPayload', token: string, user: { __typename?: 'User', id: string, email: string, username: string, tag: string, avatar?: string | null, createdAt: any, isOnline: boolean, lastSeenAt?: any | null } } };
 
 export type CreateConversationMutationVariables = Exact<{
   input: CreateConversationInput;
 }>;
 
 
-export type CreateConversationMutation = { __typename?: 'Mutation', createConversation: { __typename?: 'Conversation', id: string, type: ConversationType, name?: string | null, createdAt: any, members: Array<{ __typename?: 'User', id: string, username: string, avatar?: string | null, isOnline: boolean }> } };
+export type CreateConversationMutation = { __typename?: 'Mutation', createConversation: { __typename?: 'Conversation', id: string, type: ConversationType, name?: string | null, createdAt: any, members: Array<{ __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean }> } };
 
 export type JoinConversationMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type JoinConversationMutation = { __typename?: 'Mutation', joinConversation: { __typename?: 'Conversation', id: string, type: ConversationType, name?: string | null, createdAt: any, members: Array<{ __typename?: 'User', id: string, username: string, avatar?: string | null, isOnline: boolean }> } };
+export type JoinConversationMutation = { __typename?: 'Mutation', joinConversation: { __typename?: 'Conversation', id: string, type: ConversationType, name?: string | null, createdAt: any, members: Array<{ __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean }> } };
 
 export type SendMessageMutationVariables = Exact<{
   input: SendMessageInput;
 }>;
 
 
-export type SendMessageMutation = { __typename?: 'Mutation', sendMessage: { __typename?: 'Message', id: string, content: string, createdAt: any, sender: { __typename?: 'User', id: string, username: string, avatar?: string | null }, conversation: { __typename?: 'Conversation', id: string } } };
+export type SendMessageMutation = { __typename?: 'Mutation', sendMessage: { __typename?: 'Message', id: string, content: string, createdAt: any, sender: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null }, conversation: { __typename?: 'Conversation', id: string } } };
 
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMeQuery = { __typename?: 'Query', me?: { __typename?: 'User', id: string, email: string, username: string, avatar?: string | null, createdAt: any, isOnline: boolean, lastSeenAt?: any | null } | null };
+export type GetMeQuery = { __typename?: 'Query', me?: { __typename?: 'User', id: string, email: string, username: string, tag: string, avatar?: string | null, createdAt: any, isOnline: boolean, lastSeenAt?: any | null } | null };
 
 export type GetUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetUsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', id: string, email: string, username: string, avatar?: string | null, createdAt: any, isOnline: boolean, lastSeenAt?: any | null }> };
+export type GetUsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', id: string, email: string, username: string, tag: string, avatar?: string | null, createdAt: any, isOnline: boolean, lastSeenAt?: any | null }> };
 
 export type GetUserQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, email: string, username: string, avatar?: string | null, createdAt: any, isOnline: boolean, lastSeenAt?: any | null } | null };
+export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, email: string, username: string, tag: string, avatar?: string | null, createdAt: any, isOnline: boolean, lastSeenAt?: any | null } | null };
 
 export type GetMyConversationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMyConversationsQuery = { __typename?: 'Query', myConversations: Array<{ __typename?: 'Conversation', id: string, type: ConversationType, name?: string | null, avatar?: string | null, createdAt: any, members: Array<{ __typename?: 'User', id: string, username: string, avatar?: string | null, isOnline: boolean }>, messages: Array<{ __typename?: 'Message', id: string, content: string, createdAt: any, sender: { __typename?: 'User', id: string, username: string } }> }> };
+export type GetMyConversationsQuery = { __typename?: 'Query', myConversations: Array<{ __typename?: 'Conversation', id: string, type: ConversationType, name?: string | null, avatar?: string | null, createdAt: any, members: Array<{ __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean }>, messages: Array<{ __typename?: 'Message', id: string, content: string, createdAt: any, sender: { __typename?: 'User', id: string, username: string } }> }> };
 
 export type GetConversationQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetConversationQuery = { __typename?: 'Query', conversation?: { __typename?: 'Conversation', id: string, type: ConversationType, name?: string | null, avatar?: string | null, createdAt: any, members: Array<{ __typename?: 'User', id: string, username: string, avatar?: string | null, isOnline: boolean }>, messages: Array<{ __typename?: 'Message', id: string, content: string, createdAt: any, sender: { __typename?: 'User', id: string, username: string, avatar?: string | null } }> } | null };
+export type GetConversationQuery = { __typename?: 'Query', conversation?: { __typename?: 'Conversation', id: string, type: ConversationType, name?: string | null, avatar?: string | null, createdAt: any, members: Array<{ __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean }>, messages: Array<{ __typename?: 'Message', id: string, content: string, createdAt: any, sender: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null } }> } | null };
+
+export type GetMyFriendsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetMyFriendsQuery = { __typename?: 'Query', myFriends: Array<{ __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean, lastSeenAt?: any | null }> };
+
+export type GetFriendRequestsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetFriendRequestsQuery = { __typename?: 'Query', myIncomingFriendRequests: Array<{ __typename?: 'FriendRequest', id: string, status: FriendRequestStatus, createdAt: any, updatedAt: any, fromUser: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean }, toUser: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean } }> };
+
+export type GetPendingFriendRequestsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetPendingFriendRequestsQuery = { __typename?: 'Query', myIncomingFriendRequests: Array<{ __typename?: 'FriendRequest', id: string, status: FriendRequestStatus, createdAt: any, fromUser: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean } }> };
 
 export type MessageSentSubscriptionVariables = Exact<{
   conversationId: Scalars['ID']['input'];
@@ -287,6 +302,7 @@ export const RegisterDocument = gql`
       id
       email
       username
+      tag
       avatar
       createdAt
       isOnline
@@ -314,6 +330,7 @@ export const LoginDocument = gql`
       id
       email
       username
+      tag
       avatar
       createdAt
       isOnline
@@ -343,6 +360,7 @@ export const CreateConversationDocument = gql`
     members {
       id
       username
+      tag
       avatar
       isOnline
     }
@@ -370,6 +388,7 @@ export const JoinConversationDocument = gql`
     members {
       id
       username
+      tag
       avatar
       isOnline
     }
@@ -396,6 +415,7 @@ export const SendMessageDocument = gql`
     sender {
       id
       username
+      tag
       avatar
     }
     conversation {
@@ -421,6 +441,7 @@ export const GetMeDocument = gql`
     id
     email
     username
+    tag
     avatar
     createdAt
     isOnline
@@ -445,6 +466,7 @@ export const GetUsersDocument = gql`
     id
     email
     username
+    tag
     avatar
     createdAt
     isOnline
@@ -469,6 +491,7 @@ export const GetUserDocument = gql`
     id
     email
     username
+    tag
     avatar
     createdAt
     isOnline
@@ -498,6 +521,7 @@ export const GetMyConversationsDocument = gql`
     members {
       id
       username
+      tag
       avatar
       isOnline
     }
@@ -535,6 +559,7 @@ export const GetConversationDocument = gql`
     members {
       id
       username
+      tag
       avatar
       isOnline
     }
@@ -545,6 +570,7 @@ export const GetConversationDocument = gql`
       sender {
         id
         username
+        tag
         avatar
       }
     }
@@ -557,6 +583,91 @@ export const GetConversationDocument = gql`
   })
   export class GetConversationGQL extends Apollo.Query<GetConversationQuery, GetConversationQueryVariables> {
     document = GetConversationDocument;
+    
+    constructor(apollo: Apollo.Apollo) {
+      super(apollo);
+    }
+  }
+export const GetMyFriendsDocument = gql`
+    query GetMyFriends {
+  myFriends {
+    id
+    username
+    tag
+    avatar
+    isOnline
+    lastSeenAt
+  }
+}
+    `;
+
+  @Injectable({
+    providedIn: 'root'
+  })
+  export class GetMyFriendsGQL extends Apollo.Query<GetMyFriendsQuery, GetMyFriendsQueryVariables> {
+    document = GetMyFriendsDocument;
+    
+    constructor(apollo: Apollo.Apollo) {
+      super(apollo);
+    }
+  }
+export const GetFriendRequestsDocument = gql`
+    query GetFriendRequests {
+  myIncomingFriendRequests {
+    id
+    fromUser {
+      id
+      username
+      tag
+      avatar
+      isOnline
+    }
+    toUser {
+      id
+      username
+      tag
+      avatar
+      isOnline
+    }
+    status
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+  @Injectable({
+    providedIn: 'root'
+  })
+  export class GetFriendRequestsGQL extends Apollo.Query<GetFriendRequestsQuery, GetFriendRequestsQueryVariables> {
+    document = GetFriendRequestsDocument;
+    
+    constructor(apollo: Apollo.Apollo) {
+      super(apollo);
+    }
+  }
+export const GetPendingFriendRequestsDocument = gql`
+    query GetPendingFriendRequests {
+  myIncomingFriendRequests {
+    id
+    fromUser {
+      id
+      username
+      tag
+      avatar
+      isOnline
+    }
+    status
+    createdAt
+  }
+}
+    `;
+
+  @Injectable({
+    providedIn: 'root'
+  })
+  export class GetPendingFriendRequestsGQL extends Apollo.Query<GetPendingFriendRequestsQuery, GetPendingFriendRequestsQueryVariables> {
+    document = GetPendingFriendRequestsDocument;
     
     constructor(apollo: Apollo.Apollo) {
       super(apollo);

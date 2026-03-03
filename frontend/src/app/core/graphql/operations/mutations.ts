@@ -8,6 +8,7 @@ export const REGISTER = gql`
         id
         email
         username
+        tag
         avatar
         createdAt
         isOnline
@@ -25,6 +26,7 @@ export const LOGIN = gql`
         id
         email
         username
+        tag
         avatar
         createdAt
         isOnline
@@ -44,6 +46,7 @@ export const CREATE_CONVERSATION = gql`
       members {
         id
         username
+        tag
         avatar
         isOnline
       }
@@ -61,6 +64,7 @@ export const JOIN_CONVERSATION = gql`
       members {
         id
         username
+        tag
         avatar
         isOnline
       }
@@ -77,6 +81,7 @@ export const SEND_MESSAGE = gql`
       sender {
         id
         username
+        tag
         avatar
       }
       conversation {
