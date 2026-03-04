@@ -1,4 +1,4 @@
-import { Component, Input, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -15,6 +15,7 @@ export class ProfileSectionComponent {
   private router = inject(Router);
   
   @Input() isExpanded: boolean = false;
+  @Output() menuOpen = new EventEmitter();
   showMenu = false;
 
   get currentUser() {
@@ -33,13 +34,15 @@ export class ProfileSectionComponent {
   toggleMenu(event: Event) {
     event.stopPropagation();
     this.showMenu = !this.showMenu;
+    if(this.showMenu) this.menuOpen.emit();
   }
 
   closeMenu() {
     this.showMenu = false;
   }
 
-  logout() {
+  logout(event: Event) {
+    event.stopPropagation();
     this.authService.logout();
     this.router.navigate(['/login']);
   }

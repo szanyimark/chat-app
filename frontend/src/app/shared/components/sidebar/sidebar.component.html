@@ -1,7 +1,7 @@
-<aside class="sidebar" [class.expanded]="isExpanded">
+<aside class="sidebar" [class.expanded]="isExpanded()">
   <!-- Top section: Navigation -->
   <div class="sidebar-top">
-    @if(isExpanded){
+    @if(isExpanded()){
       <div class="logo">
         <span class="logo-text">ChatApp</span>
       </div>
@@ -13,7 +13,7 @@
         icon="pi-comments"
         label="Chats"
         [isActive]="isChatsPage()"
-        [isExpanded]="isExpanded"
+        [isExpanded]="isExpanded()"
       />
       
       <app-nav-item
@@ -21,18 +21,18 @@
         icon="pi-users"
         label="Friends"
         [isActive]="isFriendsPage()"
-        [isExpanded]="isExpanded"
+        [isExpanded]="isExpanded()"
       />
     </nav>
   </div>
   
   <!-- Bottom section: Profile and expand -->
   <div class="sidebar-bottom">
-    <app-profile-section [isExpanded]="isExpanded" />
+    <app-profile-section [isExpanded]="isExpanded()" (menuOpen)="onMenuOpen()" />
     
     <!-- Expand/Collapse button -->
-    <button class="expand-btn" (click)="onToggle()" [title]="isExpanded ? 'Collapse' : 'Expand'">
-      <span class="pi" [ngClass]="isExpanded ? 'pi-angle-left' : 'pi-angle-right'"></span>
+    <button class="expand-btn" (click)="onToggleSidebar()" [title]="isExpanded() ? 'Collapse' : 'Expand'">
+      <span class="pi" [ngClass]="isExpanded() ? 'pi-angle-left' : 'pi-angle-right'"></span>
     </button>
   </div>
 </aside>

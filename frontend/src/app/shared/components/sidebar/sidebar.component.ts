@@ -1,4 +1,4 @@
-import { Component, inject, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -12,21 +12,18 @@ import { ProfileSectionComponent } from '../profile-section/profile-section.comp
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
-export class SidebarComponent implements OnInit {
+export class SidebarComponent {
   private router = inject(Router);
   private authService = inject(AuthService);
 
-  @Input() isExpanded = false;
-  @Output() toggle = new EventEmitter<void>();
+  protected readonly isExpanded = signal(false);
 
-  ngOnInit() {
-    this.router.events.subscribe(() => {
-      // Track route changes if needed
-    });
+  onToggleSidebar() {
+    this.isExpanded.update(v => !v);
   }
 
-  onToggle() {
-    this.toggle.emit();
+  onMenuOpen() {
+    this.isExpanded.set(true);
   }
 
   isChatsPage(): boolean {

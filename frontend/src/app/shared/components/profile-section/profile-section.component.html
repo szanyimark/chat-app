@@ -17,7 +17,7 @@
     
     @if(showMenu){
       <div class="profile-menu">
-        <button class="menu-item" (click)="logout()">
+        <button class="menu-item" (click)="logout($event)">
           <span class="pi pi-sign-out"></span>
           <span>Logout</span>
         </button>
