@@ -1,0 +1,38 @@
+<aside class="sidebar" [class.expanded]="isExpanded">
+  <!-- Top section: Navigation -->
+  <div class="sidebar-top">
+    @if(isExpanded){
+      <div class="logo">
+        <span class="logo-text">ChatApp</span>
+      </div>
+    }
+    
+    <nav class="nav-menu">
+      <app-nav-item
+        routerLink="/chats"
+        icon="pi-comments"
+        label="Chats"
+        [isActive]="isChatsPage()"
+        [isExpanded]="isExpanded"
+      />
+      
+      <app-nav-item
+        routerLink="/friends"
+        icon="pi-users"
+        label="Friends"
+        [isActive]="isFriendsPage()"
+        [isExpanded]="isExpanded"
+      />
+    </nav>
+  </div>
+  
+  <!-- Bottom section: Profile and expand -->
+  <div class="sidebar-bottom">
+    <app-profile-section [isExpanded]="isExpanded" />
+    
+    <!-- Expand/Collapse button -->
+    <button class="expand-btn" (click)="onToggle()" [title]="isExpanded ? 'Collapse' : 'Expand'">
+      <span class="pi" [ngClass]="isExpanded ? 'pi-angle-left' : 'pi-angle-right'"></span>
+    </button>
+  </div>
+</aside>

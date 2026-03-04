@@ -1,6 +1,7 @@
 # Development stage (used by docker-compose for dev)
 FROM node:20-alpine AS development
 WORKDIR /app
+RUN apk add --no-cache curl
 RUN npm install -g @angular/cli@17
 COPY package.json ./
 COPY package-lock.json ./

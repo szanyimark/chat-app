@@ -1,0 +1,27 @@
+@if(currentUser){
+  <div class="profile-section" (click)="toggleMenu($event)" (blur)="closeMenu()" tabindex="0">
+    <div class="profile-avatar">
+      @if(currentUser.avatar){
+        <img [src]="currentUser.avatar" [alt]="currentUser.username">
+      } @else {
+        <div class="avatar-placeholder">
+          {{ getInitials(currentUser.username) }}
+        </div>
+      }
+    </div>
+    @if(isExpanded){
+      <div class="profile-info">
+        <span class="username">{{ currentUser.username }}</span>
+      </div>
+    }
+    
+    @if(showMenu){
+      <div class="profile-menu">
+        <button class="menu-item" (click)="logout()">
+          <span class="pi pi-sign-out"></span>
+          <span>Logout</span>
+        </button>
+      </div>
+    }
+  </div>
+}

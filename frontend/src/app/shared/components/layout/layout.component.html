@@ -1,0 +1,12 @@
+<div class="app-layout" [class.sidebar-expanded]="isExpanded()">
+  <!-- Sidebar -->
+  <app-sidebar 
+    [isExpanded]="isExpanded()" 
+    (toggle)="onToggleSidebar()"
+  ></app-sidebar>
+  
+  <!-- Main content -->
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

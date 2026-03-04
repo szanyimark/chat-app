@@ -1,0 +1,11 @@
+<a 
+  [routerLink]="routerLink" 
+  class="nav-item" 
+  [class.active]="isActive"
+  [title]="isExpanded ? '' : label"
+>
+  <span class="pi" [ngClass]="icon"></span>
+  @if(isExpanded){
+    <span class="nav-label">{{ label }}</span>
+  }
+</a>
