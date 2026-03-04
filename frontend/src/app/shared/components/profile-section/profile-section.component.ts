@@ -41,8 +41,7 @@ export class ProfileSectionComponent {
     this.showMenu = false;
   }
 
-  logout(event: Event) {
-    event.stopPropagation();
+  logout() {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
