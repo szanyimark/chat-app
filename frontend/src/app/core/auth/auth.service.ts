@@ -16,10 +16,12 @@ export class AuthService {
 
   private currentUserSignal = signal<User | null>(null);
   private isLoadingSignal = signal(false);
+  private initializedSignal = signal(false);
   
   readonly currentUser = this.currentUserSignal.asReadonly();
   readonly isAuthenticated = computed(() => !!this.currentUserSignal());
   readonly isLoading = this.isLoadingSignal.asReadonly();
+  readonly isInitialized = this.initializedSignal.asReadonly();
 
   constructor() {
     this.loadStoredUser();
@@ -28,7 +30,11 @@ export class AuthService {
   private loadStoredUser(): void {
     const token = this.getToken();
     if (token) {
-      this.fetchCurrentUser();
+      this.fetchCurrentUser().subscribe({
+        complete: () => this.initializedSignal.set(true)
+      });
+    } else {
+      this.initializedSignal.set(true);
     }
   }
 
