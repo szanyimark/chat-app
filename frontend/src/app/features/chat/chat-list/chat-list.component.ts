@@ -1,11 +1,7 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { Apollo } from 'apollo-angular';
-import { map } from 'rxjs/operators';
-import { AuthService } from '../../../core/auth/auth.service';
-import { GET_MY_CONVERSATIONS } from '../../../core/graphql/operations/queries';
-import { Conversation, User, ConversationType } from '../../../core/graphql/generated/graphql';
+import { FormsModule } from '@angular/forms';
+import { ConversationType } from '../../../core/graphql/generated/graphql';
 
 interface ConversationWithLastMessage {
   id: string;
@@ -27,88 +23,53 @@ interface ConversationWithLastMessage {
 @Component({
   selector: 'app-chat-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './chat-list.component.html',
   styleUrl: './chat-list.component.scss'
 })
-export class ChatListComponent implements OnInit {
-  private apollo = inject(Apollo);
-  private router = inject(Router);
-  private authService = inject(AuthService);
+export class ChatListComponent {
+  @Input() conversations: ConversationWithLastMessage[] = [];
+  @Input() loading = true;
+  @Input() error: string | null = null;
+  @Input() selectedConversationId: string | null = null;
+  @Input() currentUserId: string | null = null;
 
-  conversations = signal<ConversationWithLastMessage[]>([]);
-  loading = signal(true);
-  error = signal<string | null>(null);
+  @Output() conversationSelected = new EventEmitter<string>();
+  @Output() newChatClicked = new EventEmitter<void>();
 
-  currentUserId: string | null = null;
+  searchQuery = signal('');
 
-  ngOnInit() {
-    const user = this.authService.currentUser();
-    this.currentUserId = user?.id ?? null;
-    this.loadConversations();
-  }
-
-  loadConversations() {
-    this.apollo.watchQuery<{ myConversations: Conversation[] }>({
-      query: GET_MY_CONVERSATIONS,
-      fetchPolicy: 'network-only'
-    }).valueChanges.pipe(
-      map(result => result.data?.myConversations ?? [])
-    ).subscribe({
-      next: (conversations) => {
-        // Transform conversations to add last message
-        const transformed: ConversationWithLastMessage[] = conversations.map(conv => ({
-          id: conv.id ?? '',
-          type: conv.type ?? ConversationType.Private,
-          name: conv.name,
-          avatar: conv.avatar,
-          members: (conv.members ?? []).map(m => ({
-            id: m?.id ?? '',
-            username: m?.username ?? '',
-            avatar: m?.avatar
-          })),
-          lastMessage: conv.messages && conv.messages.length > 0 && conv.messages[0] ? {
-            id: conv.messages[0].id ?? '',
-            content: conv.messages[0].content ?? '',
-            createdAt: new Date(conv.messages[0].createdAt),
-            sender: {
-              id: conv.messages[0].sender?.id ?? '',
-              username: conv.messages[0].sender?.username ?? ''
-            }
-          } : undefined
-        }));
-        this.conversations.set(transformed);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.error.set(err.message);
-        this.loading.set(false);
-      }
-    });
+  get filteredConversations(): ConversationWithLastMessage[] {
+    const query = this.searchQuery().toLowerCase();
+    if (!query) return this.conversations;
+    return this.conversations.filter(conv => 
+      this.getConversationName(conv).toLowerCase().includes(query)
+    );
   }
 
   getConversationName(conversation: ConversationWithLastMessage): string {
-    // For private chats, show the other user's name
     if (conversation.type === ConversationType.Private && conversation.members && this.currentUserId) {
       const otherMember = conversation.members.find(m => m.id !== this.currentUserId);
       return otherMember?.username || 'Unknown';
     }
-    // For group chats, use the conversation name
     return conversation.name || 'Unnamed Group';
   }
 
   getConversationAvatar(conversation: ConversationWithLastMessage): string | null | undefined {
-    // For private chats, use the other user's avatar
     if (conversation.type === ConversationType.Private && conversation.members && this.currentUserId) {
       const otherMember = conversation.members.find(m => m.id !== this.currentUserId);
       return otherMember?.avatar;
     }
-    // For group chats, use the conversation avatar
     return conversation.avatar;
   }
 
-  openChat(conversationId: string) {
-    this.router.navigate(['/chat', conversationId]);
+  selectConversation(conversationId: string) {
+    this.selectedConversationId = conversationId;
+    this.conversationSelected.emit(conversationId);
+  }
+
+  newChat() {
+    this.newChatClicked.emit();
   }
 
   formatMessageTime(date: Date | undefined): string {

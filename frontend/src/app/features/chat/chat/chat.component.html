@@ -1,0 +1,63 @@
+<div class="chat-panel">
+  @if (conversation; as conv) {
+    <div class="chat-messages">
+      <div class="chat-header">
+        <div class="chat-title">
+          <div class="avatar">
+            @if (getConversationAvatar(); as avatar) {
+              <img [src]="avatar" [alt]="getConversationName()">
+            } @else {
+              <div class="avatar-placeholder">
+                {{ getInitials(getConversationName()) }}
+              </div>
+            }
+          </div>
+          <span class="name">{{ getConversationName() }}</span>
+        </div>
+      </div>
+      
+      <div class="messages-container">
+        <div class="messages-list">
+          @if (conv.messages && conv.messages.length > 0) {
+            @for (message of conv.messages; track message.id) {
+              <div class="message" [class.own]="message.sender.id === currentUserId">
+                <div class="message-content">
+                  <span class="sender-name">{{ message.sender.username }}</span>
+                  <p class="message-text">{{ message.content }}</p>
+                  <span class="message-time">{{ formatMessageTime(message.createdAt) }}</span>
+                </div>
+              </div>
+            }
+          } @else {
+            <div class="no-messages">No messages yet. Say hello!</div>
+          }
+        </div>
+      </div>
+      
+      <div class="message-input">
+        <input 
+          type="text" 
+          placeholder="Type a message..."
+          [(ngModel)]="newMessage"
+          (keypress)="onKeyPress($event)"
+        >
+        <button class="send-btn" (click)="onSendMessage()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+    </div>
+  } @else {
+    <div class="no-selection-panel">
+      <div class="no-selection-content">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <h3>Select a chat</h3>
+        <p>Choose a conversation from the list to start messaging</p>
+      </div>
+    </div>
+  }
+</div>

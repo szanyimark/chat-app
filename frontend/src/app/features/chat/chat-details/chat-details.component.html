@@ -1,0 +1,74 @@
+<div class="details-panel">
+  @if (conversation; as conv) {
+    <div class="details-content">
+      <div class="details-header">
+        <h3>Details</h3>
+      </div>
+      
+      <div class="profile-section">
+        <div class="profile-avatar large">
+          @if (conv.avatar; as avatar) {
+            <img [src]="avatar" [alt]="conv.name || 'Chat'">
+          } @else {
+            <div class="avatar-placeholder">
+              {{ getInitials(conv.name || 'Chat') }}
+            </div>
+          }
+        </div>
+        <h4 class="profile-name">{{ conv.name || 'Unnamed Chat' }}</h4>
+        @if (conv.type === 'PRIVATE' && getOtherMember(); as member) {
+          <span class="profile-status">Online</span>
+        }
+      </div>
+      
+      <div class="info-section">
+        <div class="info-item">
+          <span class="info-label">Type</span>
+          <span class="info-value">{{ conv.type === 'PRIVATE' ? 'Private Chat' : 'Group' }}</span>
+        </div>
+        
+        @if (conv.type === 'GROUP' && conv.name) {
+          <div class="info-item">
+            <span class="info-label">Group Name</span>
+            <span class="info-value">{{ conv.name }}</span>
+          </div>
+        }
+        
+        <div class="info-item">
+          <span class="info-label">Members</span>
+          <span class="info-value">{{ conv.members.length }} member(s)</span>
+        </div>
+      </div>
+      
+      <div class="members-list">
+        <h5>Members</h5>
+        @for (member of conv.members; track member.id) {
+          <div class="member-item">
+            <div class="member-avatar">
+              @if (member.avatar; as avatar) {
+                <img [src]="avatar" [alt]="member.username">
+              } @else {
+                <div class="avatar-placeholder small">
+                  {{ getInitials(member.username) }}
+                </div>
+              }
+            </div>
+            <span class="member-name">{{ member.username }}</span>
+            @if (member.id === currentUserId) {
+              <span class="you-badge">You</span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="no-details">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+      <p>Select a chat to view details</p>
+    </div>
+  }
+</div>
