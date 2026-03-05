@@ -6,6 +6,7 @@
   cursor: pointer;
   transition: background-color 0.2s;
   position: relative;
+  width: 100%;
 
   &:hover {
     background-color: rgba(255, 255, 255, 0.1);
@@ -13,6 +14,14 @@
 
   &:focus {
     outline: none;
+  }
+
+  &.expanded {
+    justify-content: flex-start;
+  }
+
+  &:not(.expanded) {
+    justify-content: center;
   }
 
   .profile-avatar {

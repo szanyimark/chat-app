@@ -1,5 +1,5 @@
 @if(currentUser){
-  <div class="profile-section" (click)="toggleMenu($event)" (blur)="closeMenu()" tabindex="0">
+  <div class="profile-section" [class.expanded]="isExpanded" (click)="toggleMenu($event)" (blur)="closeMenu()" tabindex="0">
     <div class="profile-avatar">
       @if(currentUser.avatar){
         <img [src]="currentUser.avatar" [alt]="currentUser.username">
