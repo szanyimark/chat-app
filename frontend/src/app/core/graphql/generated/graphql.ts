@@ -236,6 +236,13 @@ export type SendMessageMutationVariables = Exact<{
 
 export type SendMessageMutation = { __typename?: 'Mutation', sendMessage: { __typename?: 'Message', id: string, content: string, createdAt: any, sender: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null }, conversation: { __typename?: 'Conversation', id: string } } };
 
+export type SendFriendRequestMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+}>;
+
+
+export type SendFriendRequestMutation = { __typename?: 'Mutation', sendFriendRequest: { __typename?: 'FriendRequest', id: string, status: FriendRequestStatus, createdAt: any, fromUser: { __typename?: 'User', id: string, username: string, tag: string }, toUser: { __typename?: 'User', id: string, username: string, tag: string } } };
+
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -430,6 +437,36 @@ export const SendMessageDocument = gql`
   })
   export class SendMessageGQL extends Apollo.Mutation<SendMessageMutation, SendMessageMutationVariables> {
     document = SendMessageDocument;
+    
+    constructor(apollo: Apollo.Apollo) {
+      super(apollo);
+    }
+  }
+export const SendFriendRequestDocument = gql`
+    mutation SendFriendRequest($userId: ID!) {
+  sendFriendRequest(userId: $userId) {
+    id
+    status
+    createdAt
+    fromUser {
+      id
+      username
+      tag
+    }
+    toUser {
+      id
+      username
+      tag
+    }
+  }
+}
+    `;
+
+  @Injectable({
+    providedIn: 'root'
+  })
+  export class SendFriendRequestGQL extends Apollo.Mutation<SendFriendRequestMutation, SendFriendRequestMutationVariables> {
+    document = SendFriendRequestDocument;
     
     constructor(apollo: Apollo.Apollo) {
       super(apollo);

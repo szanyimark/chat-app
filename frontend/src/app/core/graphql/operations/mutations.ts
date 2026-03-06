@@ -90,3 +90,23 @@ export const SEND_MESSAGE = gql`
     }
   }
 `;
+
+export const SEND_FRIEND_REQUEST = gql`
+  mutation SendFriendRequest($userId: ID!) {
+    sendFriendRequest(userId: $userId) {
+      id
+      status
+      createdAt
+      fromUser {
+        id
+        username
+        tag
+      }
+      toUser {
+        id
+        username
+        tag
+      }
+    }
+  }
+`;

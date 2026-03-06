@@ -1,0 +1,46 @@
+<div class="add-friend-wrap" [class.open]="isOpen()">
+  <div class="expand-rail">
+    <div class="add-friend-search">
+      <input
+        #tagInput
+        type="text"
+        placeholder="Search by tag (@username)"
+        [ngModel]="searchTag()"
+        (ngModelChange)="onSearchChange($event)"
+        [disabled]="!isOpen()"
+      >
+
+      @if (isOpen() && searchResults().length > 0) {
+        <div class="search-results">
+          @for (user of searchResults(); track user.id) {
+            <button type="button" class="result-item" (click)="selectUser(user)">
+              <div class="identity">
+                <span class="name">{{ user.username }}</span>
+                <span class="tag">{{ user.tag }}</span>
+              </div>
+              <span class="status" [class.online]="user.isOnline"></span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="send-btn"
+      [disabled]="!isOpen() || loading() || !selectedUser()"
+      (click)="sendRequest()"
+      title="Send friend request"
+    >
+      Send
+    </button>
+  </div>
+
+  <button type="button" class="add-btn" (click)="toggle()" [title]="isOpen() ? 'Close add friend' : 'Add friend'">
+    {{ isOpen() ? 'Close' : 'Add Friend' }}
+  </button>
+</div>
+
+@if (error()) {
+  <p class="error-msg">{{ error() }}</p>
+}
