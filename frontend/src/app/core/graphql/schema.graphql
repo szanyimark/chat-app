@@ -18,7 +18,7 @@ type Mutation {
   joinConversation(id: ID!): Conversation!
   sendMessage(input: SendMessageInput!): Message!
 
-  sendFriendRequest(userId: ID!): FriendRequest!
+  sendFriendRequest(userId: UUID!): FriendRequest!
   cancelFriendRequest(requestId: ID!): Boolean!
   respondToFriendRequest(requestId: ID! accept: Boolean!): Boolean!
   removeFriend(userId: ID!): Boolean!
@@ -106,3 +106,4 @@ enum FriendRequestStatus {
 }
 
 scalar DateTime
+scalar UUID

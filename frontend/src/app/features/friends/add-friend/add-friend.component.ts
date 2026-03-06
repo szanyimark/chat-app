@@ -6,10 +6,10 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, takeUntil } from 'rxjs/operators';
 import { SEARCH_USERS } from '../../../core/graphql/operations/queries';
 import { SEND_FRIEND_REQUEST } from '../../../core/graphql/operations/mutations';
-import { SearchUsersQuery, SendFriendRequestMutation, SendFriendRequestMutationVariables } from '../../../core/graphql/generated/graphql';
+import { Scalars, SearchUsersQuery, SendFriendRequestMutation, SendFriendRequestMutationVariables } from '../../../core/graphql/generated/graphql';
 
 interface SearchUser {
-  id: string;
+  id: Scalars['ID']['output'];
   username: string;
   tag: string;
   avatar?: string | null;
@@ -135,12 +135,21 @@ export class AddFriendComponent implements OnDestroy, OnInit {
       return;
     }
 
+    // Validate that userId is a valid UUID (with or without dashes)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidNoDashRegex = /^[0-9a-f]{32}$/i;
+    if (!uuidRegex.test(user.id) && !uuidNoDashRegex.test(user.id)) {
+      this.error.set('Invalid user ID format');
+
+      return;
+    }
+
     this.loading.set(true);
     this.error.set(null);
 
-    const variables: SendFriendRequestMutationVariables = {
-      userId: user.id as string
-    };
+    const variables = {
+      userId: user.id as SendFriendRequestMutationVariables['userId']
+    } satisfies SendFriendRequestMutationVariables;
 
     this.apollo.mutate<SendFriendRequestMutation, SendFriendRequestMutationVariables>({
       mutation: SEND_FRIEND_REQUEST,

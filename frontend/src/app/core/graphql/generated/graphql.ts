@@ -11,6 +11,7 @@ export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' |
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: { input: string; output: string; }
+  UUID: { input: string; output: string; }
   String: { input: string; output: string; }
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
@@ -243,7 +244,7 @@ export type SendMessageMutationVariables = Exact<{
 export type SendMessageMutation = { __typename?: 'Mutation', sendMessage: { __typename?: 'Message', id: string, content: string, createdAt: any, sender: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null }, conversation: { __typename?: 'Conversation', id: string } } };
 
 export type SendFriendRequestMutationVariables = Exact<{
-  userId: Scalars['ID']['input'];
+  userId: Scalars['UUID']['input'];
 }>;
 
 
@@ -456,7 +457,7 @@ export const SendMessageDocument = gql`
     }
   }
 export const SendFriendRequestDocument = gql`
-    mutation SendFriendRequest($userId: ID!) {
+  mutation SendFriendRequest($userId: UUID!) {
   sendFriendRequest(userId: $userId) {
     id
     status

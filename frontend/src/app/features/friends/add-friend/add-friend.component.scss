@@ -150,11 +150,13 @@
 
 .add-friend-wrap.open .add-btn {
   transform: translateX(286px);
+  background-color: #ebecff;
+  color: #34349d;
 }
 
 .send-btn {
-  background-color: #ebecff;
-  color: #34349d;
+  background-color: #4a4ae2;
+  color: #fff;
 
   &:hover:not(:disabled) {
     background-color: #dde0ff;

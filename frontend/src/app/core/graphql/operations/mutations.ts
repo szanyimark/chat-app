@@ -92,7 +92,7 @@ export const SEND_MESSAGE = gql`
 `;
 
 export const SEND_FRIEND_REQUEST = gql`
-  mutation SendFriendRequest($userId: ID!) {
+  mutation SendFriendRequest($userId: UUID!) {
     sendFriendRequest(userId: $userId) {
       id
       status
