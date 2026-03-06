@@ -30,6 +30,21 @@ export const GET_USERS = gql`
   }
 `;
 
+export const SEARCH_USERS = gql`
+  query SearchUsers($searchTerm: String) {
+    searchUsers(searchTerm: $searchTerm) {
+      id
+      email
+      username
+      tag
+      avatar
+      createdAt
+      isOnline
+      lastSeenAt
+    }
+  }
+`;
+
 export const GET_USER = gql`
   query GetUser($id: ID!) {
     user(id: $id) {

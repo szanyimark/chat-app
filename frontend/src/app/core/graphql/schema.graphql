@@ -2,6 +2,7 @@ type Query {
   me: User
   users: [User!]!
   user(id: ID!): User
+  searchUsers(searchTerm: String): [User!]!
   myConversations: [Conversation!]!
   conversation(id: ID!): Conversation
 

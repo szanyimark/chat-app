@@ -25,6 +25,19 @@ public class Query
         return await db.Users.ToListAsync();
     }
 
+    public async Task<List<User>> SearchUsers(string? searchTerm, [Service] AppDbContext db)
+    {
+        var query = db.Users.AsQueryable();
+        
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var term = searchTerm.Trim().ToLower();
+            query = query.Where(u => u.Tag.ToLower().Contains(term));
+        }
+        
+        return await query.ToListAsync();
+    }
+
     // Friends
     public async Task<List<User>> GetMyFriends([Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
     {

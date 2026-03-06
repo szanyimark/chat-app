@@ -148,6 +148,7 @@ export type Query = {
   myFriends: Array<User>;
   myIncomingFriendRequests: Array<FriendRequest>;
   myOutgoingFriendRequests: Array<FriendRequest>;
+  searchUsers: Array<User>;
   user?: Maybe<User>;
   users: Array<User>;
 };
@@ -155,6 +156,11 @@ export type Query = {
 
 export type QueryConversationArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QuerySearchUsersArgs = {
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -252,6 +258,13 @@ export type GetUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetUsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', id: string, email: string, username: string, tag: string, avatar?: string | null, createdAt: any, isOnline: boolean, lastSeenAt?: any | null }> };
+
+export type SearchUsersQueryVariables = Exact<{
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type SearchUsersQuery = { __typename?: 'Query', searchUsers: Array<{ __typename?: 'User', id: string, email: string, username: string, tag: string, avatar?: string | null, createdAt: any, isOnline: boolean, lastSeenAt?: any | null }> };
 
 export type GetUserQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -517,6 +530,31 @@ export const GetUsersDocument = gql`
   })
   export class GetUsersGQL extends Apollo.Query<GetUsersQuery, GetUsersQueryVariables> {
     document = GetUsersDocument;
+    
+    constructor(apollo: Apollo.Apollo) {
+      super(apollo);
+    }
+  }
+export const SearchUsersDocument = gql`
+    query SearchUsers($searchTerm: String) {
+  searchUsers(searchTerm: $searchTerm) {
+    id
+    email
+    username
+    tag
+    avatar
+    createdAt
+    isOnline
+    lastSeenAt
+  }
+}
+    `;
+
+  @Injectable({
+    providedIn: 'root'
+  })
+  export class SearchUsersGQL extends Apollo.Query<SearchUsersQuery, SearchUsersQueryVariables> {
+    document = SearchUsersDocument;
     
     constructor(apollo: Apollo.Apollo) {
       super(apollo);

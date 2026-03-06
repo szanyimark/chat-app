@@ -10,7 +10,7 @@
         [disabled]="!isOpen()"
       >
 
-      @if (isOpen() && searchResults().length > 0) {
+      @if (isOpen() && searchResults().length > 0 && searchTag().length > 0) {
         <div class="search-results">
           @for (user of searchResults(); track user.id) {
             <button type="button" class="result-item" (click)="selectUser(user)">

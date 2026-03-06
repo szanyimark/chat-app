@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Apollo } from 'apollo-angular';
-import { map } from 'rxjs/operators';
-import { GET_USERS } from '../../../core/graphql/operations/queries';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map, takeUntil } from 'rxjs/operators';
+import { SEARCH_USERS } from '../../../core/graphql/operations/queries';
 import { SEND_FRIEND_REQUEST } from '../../../core/graphql/operations/mutations';
-import { User, SendFriendRequestMutation, SendFriendRequestMutationVariables } from '../../../core/graphql/generated/graphql';
+import { SearchUsersQuery, SendFriendRequestMutation, SendFriendRequestMutationVariables } from '../../../core/graphql/generated/graphql';
 
 interface SearchUser {
   id: string;
@@ -22,8 +23,10 @@ interface SearchUser {
   templateUrl: './add-friend.component.html',
   styleUrl: './add-friend.component.scss'
 })
-export class AddFriendComponent {
+export class AddFriendComponent implements OnDestroy, OnInit {
   private apollo = inject(Apollo);
+  private destroy$ = new Subject<void>();
+  private searchSubject$ = new Subject<string>();
 
   @Input() currentUserId: string | null = null;
   @Input() existingFriendIds: string[] = [];
@@ -39,6 +42,20 @@ export class AddFriendComponent {
   searchTag = signal('');
   searchResults = signal<SearchUser[]>([]);
   selectedUser = signal<SearchUser | null>(null);
+
+  ngOnInit() {
+    // Debounce search input by 300ms to avoid querying on every keystroke
+    this.searchSubject$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(query => this.executeSearch(query));
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   toggle() {
     const nextState = !this.isOpen();
@@ -56,19 +73,26 @@ export class AddFriendComponent {
     this.searchTag.set(value);
     this.error.set(null);
 
-    const query = value.trim().toLowerCase();
+    const query = value.trim();
     if (query.length < 2) {
       this.searchResults.set([]);
       this.selectedUser.set(null);
       return;
     }
 
+    // Push to subject for debouncing (no need to check length again in executeSearch)
+    this.searchSubject$.next(query);
+  }
+
+  private executeSearch(query: string) {
     this.loading.set(true);
-    this.apollo.query<{ users: User[] }>({
-      query: GET_USERS,
+    
+    this.apollo.query<SearchUsersQuery>({
+      query: SEARCH_USERS,
+      variables: { searchTerm: query },
       fetchPolicy: 'network-only'
     }).pipe(
-      map(result => result.data?.users ?? [])
+      map(result => result.data?.searchUsers ?? [])
     ).subscribe({
       next: (users) => {
         const filtered = users
@@ -81,10 +105,8 @@ export class AddFriendComponent {
           }))
           .filter(u =>
             !!u.id &&
-            !!u.tag &&
             u.id !== this.currentUserId &&
-            !this.existingFriendIds.includes(u.id) &&
-            u.tag.toLowerCase().includes(query)
+            !this.existingFriendIds.includes(u.id)
           )
           .sort((a, b) => a.tag.localeCompare(b.tag));
 
