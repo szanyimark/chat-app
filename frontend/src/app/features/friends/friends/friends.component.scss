@@ -7,8 +7,7 @@
 
 // Left Panel: Friends List
 .friends-list-panel {
-  width: 320px;
-  min-width: 320px;
+  min-width: 420px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -17,7 +16,6 @@
 
   .panel-header {
     padding: 16px;
-    border-bottom: 1px solid #e0e0e0;
 
     h2 {
       margin: 0;
@@ -25,6 +23,11 @@
       font-weight: 600;
       color: #333;
     }
+  }
+
+  .add-friend-row {
+    padding: 0 16px 14px;
+    border-bottom: 1px solid #e0e0e0;
   }
 
   .tabs {
@@ -125,6 +128,16 @@
 
   .error {
     color: #dc3545;
+  }
+
+  .request-section-title {
+    margin: 12px 8px 6px;
+    padding: 0 4px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #7a7a7a;
   }
 
   .friend-item,
