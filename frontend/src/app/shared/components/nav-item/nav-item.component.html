@@ -4,7 +4,12 @@
   [class.active]="isActive"
   [title]="isExpanded ? '' : label"
 >
-  <span class="pi" [ngClass]="icon"></span>
+  <div class="icon-wrapper">
+    <span class="pi" [ngClass]="icon"></span>
+    @if(badge > 0) {
+      <span class="badge">{{ badge }}</span>
+    }
+  </div>
   @if(isExpanded){
     <span class="nav-label">{{ label }}</span>
   }

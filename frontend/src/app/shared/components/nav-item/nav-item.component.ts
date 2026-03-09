@@ -15,4 +15,5 @@ export class NavItemComponent {
   @Input() label: string = '';
   @Input() isActive: boolean = false;
   @Input() isExpanded: boolean = false;
+  @Input() badge: number = 0;
 }
