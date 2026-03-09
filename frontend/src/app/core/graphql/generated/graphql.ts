@@ -11,12 +11,12 @@ export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' |
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: { input: string; output: string; }
-  UUID: { input: string; output: string; }
   String: { input: string; output: string; }
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
   DateTime: { input: any; output: any; }
+  UUID: { input: any; output: any; }
 };
 
 export type AuthPayload = {
@@ -182,8 +182,14 @@ export type SendMessageInput = {
 
 export type Subscription = {
   __typename?: 'Subscription';
+  friendRequestUpdated: FriendRequest;
   messageSent: Message;
   userOnline: User;
+};
+
+
+export type SubscriptionFriendRequestUpdatedArgs = {
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -244,7 +250,7 @@ export type SendMessageMutationVariables = Exact<{
 export type SendMessageMutation = { __typename?: 'Mutation', sendMessage: { __typename?: 'Message', id: string, content: string, createdAt: any, sender: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null }, conversation: { __typename?: 'Conversation', id: string } } };
 
 export type SendFriendRequestMutationVariables = Exact<{
-  userId: Scalars['UUID']['input'];
+  userId: Scalars['ID']['input'];
 }>;
 
 
@@ -294,7 +300,7 @@ export type GetMyFriendsQuery = { __typename?: 'Query', myFriends: Array<{ __typ
 export type GetFriendRequestsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetFriendRequestsQuery = { __typename?: 'Query', myIncomingFriendRequests: Array<{ __typename?: 'FriendRequest', id: string, status: FriendRequestStatus, createdAt: any, updatedAt: any, fromUser: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean }, toUser: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean } }> };
+export type GetFriendRequestsQuery = { __typename?: 'Query', myIncomingFriendRequests: Array<{ __typename?: 'FriendRequest', id: string, status: FriendRequestStatus, createdAt: any, updatedAt: any, fromUser: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean }, toUser: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean } }>, myOutgoingFriendRequests: Array<{ __typename?: 'FriendRequest', id: string, status: FriendRequestStatus, createdAt: any, updatedAt: any, fromUser: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean }, toUser: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean } }> };
 
 export type GetPendingFriendRequestsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -314,6 +320,13 @@ export type UserOnlineSubscriptionVariables = Exact<{
 
 
 export type UserOnlineSubscription = { __typename?: 'Subscription', userOnline: { __typename?: 'User', id: string, username: string, avatar?: string | null, isOnline: boolean, lastSeenAt?: any | null } };
+
+export type FriendRequestUpdatedSubscriptionVariables = Exact<{
+  userId: Scalars['ID']['input'];
+}>;
+
+
+export type FriendRequestUpdatedSubscription = { __typename?: 'Subscription', friendRequestUpdated: { __typename?: 'FriendRequest', id: string, status: FriendRequestStatus, createdAt: any, updatedAt: any, fromUser: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean }, toUser: { __typename?: 'User', id: string, username: string, tag: string, avatar?: string | null, isOnline: boolean } } };
 
 export const RegisterDocument = gql`
     mutation Register($input: RegisterInput!) {
@@ -457,7 +470,7 @@ export const SendMessageDocument = gql`
     }
   }
 export const SendFriendRequestDocument = gql`
-  mutation SendFriendRequest($userId: UUID!) {
+    mutation SendFriendRequest($userId: ID!) {
   sendFriendRequest(userId: $userId) {
     id
     status
@@ -709,6 +722,26 @@ export const GetFriendRequestsDocument = gql`
     createdAt
     updatedAt
   }
+  myOutgoingFriendRequests {
+    id
+    fromUser {
+      id
+      username
+      tag
+      avatar
+      isOnline
+    }
+    toUser {
+      id
+      username
+      tag
+      avatar
+      isOnline
+    }
+    status
+    createdAt
+    updatedAt
+  }
 }
     `;
 
@@ -794,6 +827,41 @@ export const UserOnlineDocument = gql`
   })
   export class UserOnlineGQL extends Apollo.Subscription<UserOnlineSubscription, UserOnlineSubscriptionVariables> {
     document = UserOnlineDocument;
+    
+    constructor(apollo: Apollo.Apollo) {
+      super(apollo);
+    }
+  }
+export const FriendRequestUpdatedDocument = gql`
+    subscription FriendRequestUpdated($userId: ID!) {
+  friendRequestUpdated(userId: $userId) {
+    id
+    fromUser {
+      id
+      username
+      tag
+      avatar
+      isOnline
+    }
+    toUser {
+      id
+      username
+      tag
+      avatar
+      isOnline
+    }
+    status
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+  @Injectable({
+    providedIn: 'root'
+  })
+  export class FriendRequestUpdatedGQL extends Apollo.Subscription<FriendRequestUpdatedSubscription, FriendRequestUpdatedSubscriptionVariables> {
+    document = FriendRequestUpdatedDocument;
     
     constructor(apollo: Apollo.Apollo) {
       super(apollo);

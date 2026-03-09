@@ -153,6 +153,26 @@ export const GET_FRIEND_REQUESTS = gql`
       createdAt
       updatedAt
     }
+    myOutgoingFriendRequests {
+      id
+      fromUser {
+        id
+        username
+        tag
+        avatar
+        isOnline
+      }
+      toUser {
+        id
+        username
+        tag
+        avatar
+        isOnline
+      }
+      status
+      createdAt
+      updatedAt
+    }
   }
 `;
 

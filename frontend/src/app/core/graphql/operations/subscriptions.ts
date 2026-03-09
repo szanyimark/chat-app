@@ -29,3 +29,28 @@ export const USER_ONLINE = gql`
     }
   }
 `;
+
+export const FRIEND_REQUEST_UPDATED = gql`
+  subscription FriendRequestUpdated($userId: ID!) {
+    friendRequestUpdated(userId: $userId) {
+      id
+      fromUser {
+        id
+        username
+        tag
+        avatar
+        isOnline
+      }
+      toUser {
+        id
+        username
+        tag
+        avatar
+        isOnline
+      }
+      status
+      createdAt
+      updatedAt
+    }
+  }
+`;
