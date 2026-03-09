@@ -51,6 +51,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         // Add events to check token blacklist
         options.Events = new JwtBearerEvents
         {
+            OnMessageReceived = context =>
+            {
+                // Support JWT for GraphQL WebSocket connections via query string.
+                // graphql-ws clients cannot set HTTP Authorization headers during WS upgrade.
+                var accessToken = context.Request.Query["access_token"].FirstOrDefault();
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/graphql"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            },
             OnTokenValidated = async context =>
             {
                 var tokenBlacklist = context.HttpContext.RequestServices.GetService<ITokenBlacklistService>();
@@ -139,17 +152,16 @@ using (var scope = app.Services.CreateScope())
 
 app.UseCors();
 
+app.UseWebSockets();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map GraphQL endpoint
+// Map GraphQL endpoint (handles both HTTP and WebSocket)
 app.MapGraphQL("/graphql")
     .WithOptions(new GraphQLServerOptions
     {
         Tool = { Enable = app.Environment.IsDevelopment() }
     });
-
-// Map GraphQL WebSocket endpoint for subscriptions
-app.MapGraphQLWebSocket("/graphql");
 
 app.Run();

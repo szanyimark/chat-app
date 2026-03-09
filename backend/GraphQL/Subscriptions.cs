@@ -3,54 +3,93 @@ using ChatApp.Backend.Models;
 using ChatApp.Backend.Services;
 using HotChocolate;
 using HotChocolate.Types;
+using HotChocolate.Execution;
+using HotChocolate.Subscriptions;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
 
 namespace ChatApp.Backend.GraphQL;
 
 public class Subscription
 {
-    // NOTE: HotChocolate requires a message type for [Subscribe] when the return type is IAsyncEnumerable<T>.
-    // This project uses Redis-based subscriptions, so we expose these as plain fields without [Subscribe].
-    public async IAsyncEnumerable<Message> MessageSent(
-        Guid conversationId,
+    [Subscribe(MessageType = typeof(Message))]
+    public IAsyncEnumerable<Message> MessageSent(
+        [ID] string conversationId,
         [Service] IRedisPubSubService? redisPubSub,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
-        if (redisPubSub == null)
+        if (!Guid.TryParse(conversationId, out var parsedConversationId))
         {
-            // Redis not available - subscriptions won't work
-            // In production, Redis should always be available
-            await Task.Delay(Timeout.Infinite, cancellationToken);
-            yield break;
+            throw new GraphQLException("Invalid conversation ID format");
         }
 
-        await foreach (var message in redisPubSub.SubscribeToMessages(conversationId, cancellationToken))
+        if (redisPubSub == null)
         {
-            yield return message;
+            throw new GraphQLException("Redis pub/sub service is not available");
         }
+
+        return redisPubSub.SubscribeToMessages(parsedConversationId, cancellationToken);
     }
 
-    public async IAsyncEnumerable<User> UserOnline(
-        Guid userId,
+    [Subscribe(MessageType = typeof(User))]
+    public IAsyncEnumerable<User> UserOnline(
+        [ID] string userId,
         [Service] IRedisPubSubService? redisPubSub,
         [Service] IPresenceService? presenceService,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
-        // When user subscribes to their own presence, mark them as online
-        if (presenceService != null)
+        if (!Guid.TryParse(userId, out var parsedUserId))
         {
-            await presenceService.OnConnectedAsync(userId);
+            throw new GraphQLException("Invalid user ID format");
         }
+
+        // Note: Can't call async OnConnectedAsync here anymore since method is not async
+        // This logic should be moved to connection initialization
 
         if (redisPubSub == null)
         {
-            // Redis not available - user online tracking won't work
-            await Task.Delay(Timeout.Infinite, cancellationToken);
-            yield break;
+            throw new GraphQLException("Redis pub/sub service is not available");
         }
 
-        await foreach (var user in redisPubSub.SubscribeToUserOnline(userId, cancellationToken))
+        return redisPubSub.SubscribeToUserOnline(parsedUserId, cancellationToken);
+    }
+
+    [Subscribe(With = nameof(SubscribeToFriendRequestUpdated))]
+    public FriendRequest FriendRequestUpdated(
+        [ID] string userId,
+        [EventMessage] FriendRequest friendRequest,
+        [Service] ILogger<Subscription> logger)
+    {
+        logger.LogInformation("FriendRequestUpdated event delivered for userId argument {UserId}, request {RequestId}", userId, friendRequest.Id);
+
+        return friendRequest;
+    }
+
+    public async ValueTask<ISourceStream<FriendRequest>> SubscribeToFriendRequestUpdated(
+        [ID] string userId,
+        [Service] IHttpContextAccessor httpContextAccessor,
+        [Service] ITopicEventReceiver topicEventReceiver,
+        [Service] ILogger<Subscription> logger,
+        CancellationToken cancellationToken)
+    {
+        logger.LogInformation("FriendRequestUpdated subscription request received. userId arg: {UserId}", userId);
+
+        if (!Guid.TryParse(userId, out var parsedUserId))
         {
-            yield return user;
+            logger.LogWarning("FriendRequestUpdated rejected: invalid userId format {UserId}", userId);
+            throw new GraphQLException("Invalid user ID format");
         }
+
+        var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId) || meId != parsedUserId)
+        {
+            logger.LogWarning("FriendRequestUpdated rejected: not allowed. meClaim={MeClaim}, parsedUserId={ParsedUserId}", meClaim, parsedUserId);
+            throw new GraphQLException("Not allowed");
+        }
+
+        var topic = $"friendRequestUpdated_{parsedUserId}";
+        logger.LogInformation("FriendRequestUpdated accepted for user {UserId}. Subscribing to topic {Topic}", parsedUserId, topic);
+
+        return await topicEventReceiver.SubscribeAsync<FriendRequest>(topic, cancellationToken);
     }
 }

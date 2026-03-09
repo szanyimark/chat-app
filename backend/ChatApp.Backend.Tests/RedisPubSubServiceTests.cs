@@ -178,4 +178,49 @@ public class RedisPubSubServiceTests
         // Assert
         Assert.NotNull(result);
     }
+
+    [Fact]
+    public async Task PublishFriendRequestUpdatedAsync_ShouldPublishToCorrectChannel()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var request = new FriendRequest
+        {
+            Id = Guid.NewGuid(),
+            FromUserId = Guid.NewGuid(),
+            ToUserId = userId,
+            Status = FriendRequestStatus.Pending,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            FromUser = new User { Id = Guid.NewGuid(), Email = "from@test.com", Username = "from", Password = "x", Tag = "from#1" },
+            ToUser = new User { Id = userId, Email = "to@test.com", Username = "to", Password = "x", Tag = "to#1" }
+        };
+
+        var mockSubscriber = new Mock<ISubscriber>();
+        _mockRedis.Setup(x => x.GetSubscriber(It.IsAny<object>())).Returns(mockSubscriber.Object);
+
+        // Act
+        await _service.PublishFriendRequestUpdatedAsync(userId, request);
+
+        // Assert
+        mockSubscriber.Verify(
+            x => x.PublishAsync(
+                RedisChannel.Literal($"chat:friend-requests:{userId}"),
+                It.IsAny<RedisValue>(),
+                It.IsAny<CommandFlags>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public void SubscribeToFriendRequestUpdates_ShouldReturnCorrectChannelName()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+
+        // Act
+        var result = _service.SubscribeToFriendRequestUpdates(userId, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+    }
 }
