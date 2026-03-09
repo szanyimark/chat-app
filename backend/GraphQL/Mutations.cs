@@ -6,6 +6,7 @@ using ChatApp.Backend.Models;
 using Microsoft.AspNetCore.Http;
 using ChatApp.Backend.Services;
 using HotChocolate;
+using HotChocolate.Subscriptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChatApp.Backend.GraphQL;
@@ -155,26 +156,29 @@ public class Mutation
     }
 
     // Join Conversation
-    public async Task<Conversation> JoinConversation(Guid id, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
+    public async Task<Conversation> JoinConversation([ID] string id, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
     {
         var userIdClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
         if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             throw new GraphQLException("Not authenticated");
 
-        var conversation = await db.Conversations.FindAsync(id);
+        if (!Guid.TryParse(id, out var parsedConversationId))
+            throw new GraphQLException("Invalid conversation ID format");
+
+        var conversation = await db.Conversations.FindAsync(parsedConversationId);
         if (conversation == null)
             throw new GraphQLException("Conversation not found");
 
         // Check if already a member
         var existingMember = await db.ConversationMembers
-            .FirstOrDefaultAsync(cm => cm.ConversationId == id && cm.UserId == userId);
+            .FirstOrDefaultAsync(cm => cm.ConversationId == parsedConversationId && cm.UserId == userId);
 
         if (existingMember != null)
             throw new GraphQLException("Already a member");
 
         var member = new ConversationMember
         {
-            ConversationId = id,
+            ConversationId = parsedConversationId,
             UserId = userId,
             Role = MemberRole.Member
         };
@@ -192,9 +196,12 @@ public class Mutation
         if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             throw new GraphQLException("Not authenticated");
 
+        if (!Guid.TryParse(input.ConversationId, out var parsedConversationId))
+            throw new GraphQLException("Invalid conversation ID format");
+
         var message = new Message
         {
-            ConversationId = input.ConversationId,
+            ConversationId = parsedConversationId,
             SenderId = userId,
             Content = input.Content
         };
@@ -209,37 +216,40 @@ public class Mutation
         // Publish to Redis for real-time subscriptions
         if (redisPubSub != null)
         {
-            await redisPubSub.PublishMessageAsync(input.ConversationId, message);
+            await redisPubSub.PublishMessageAsync(parsedConversationId, message);
         }
 
         return message;
     }
 
     // Friends - Send request
-    public async Task<FriendRequest> SendFriendRequest(Guid userId, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
+    public async Task<FriendRequest> SendFriendRequest([ID] string userId, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db, [Service] IRedisPubSubService? redisPubSub, [Service] ITopicEventSender topicEventSender)
     {
         var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
         if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId))
             throw new GraphQLException("Not authenticated");
 
-        if (meId == userId)
+        if (!Guid.TryParse(userId, out var targetUserId))
+            throw new GraphQLException("Invalid user ID format");
+
+        if (meId == targetUserId)
             throw new GraphQLException("Cannot friend yourself");
 
         // Ensure target exists
-        var targetExists = await db.Users.AnyAsync(u => u.Id == userId);
+        var targetExists = await db.Users.AnyAsync(u => u.Id == targetUserId);
         if (!targetExists)
             throw new GraphQLException("User not found");
 
         // Already friends?
-        var alreadyFriends = await db.Friendships.AnyAsync(f => f.UserId == meId && f.FriendId == userId);
+        var alreadyFriends = await db.Friendships.AnyAsync(f => f.UserId == meId && f.FriendId == targetUserId);
         if (alreadyFriends)
             throw new GraphQLException("Already friends");
 
         // Existing request either direction?
         var existing = await db.FriendRequests
             .FirstOrDefaultAsync(fr =>
-                (fr.FromUserId == meId && fr.ToUserId == userId) ||
-                (fr.FromUserId == userId && fr.ToUserId == meId));
+                (fr.FromUserId == meId && fr.ToUserId == targetUserId) ||
+                (fr.FromUserId == targetUserId && fr.ToUserId == meId));
 
         if (existing != null)
         {
@@ -248,17 +258,19 @@ public class Mutation
 
             // If previously rejected/cancelled, allow re-send by resetting
             existing.FromUserId = meId;
-            existing.ToUserId = userId;
+            existing.ToUserId = targetUserId;
             existing.Status = FriendRequestStatus.Pending;
             existing.UpdatedAt = DateTime.UtcNow;
             await db.SaveChangesAsync();
+            System.Console.WriteLine($"[DEBUG] Re-sending friend request from {meId} to {targetUserId}");
+            await PublishFriendRequestUpdateAsync(existing, redisPubSub, topicEventSender);
             return existing;
         }
 
         var request = new FriendRequest
         {
             FromUserId = meId,
-            ToUserId = userId,
+            ToUserId = targetUserId,
             Status = FriendRequestStatus.Pending,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -266,17 +278,22 @@ public class Mutation
 
         db.FriendRequests.Add(request);
         await db.SaveChangesAsync();
+        System.Console.WriteLine($"[DEBUG] Sending new friend request from {meId} to {targetUserId}");
+        await PublishFriendRequestUpdateAsync(request, redisPubSub, topicEventSender);
         return request;
     }
 
     // Friends - Cancel my outgoing request
-    public async Task<bool> CancelFriendRequest(Guid requestId, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
+    public async Task<bool> CancelFriendRequest([ID] string requestId, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db, [Service] IRedisPubSubService? redisPubSub, [Service] ITopicEventSender topicEventSender)
     {
         var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
         if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId))
             throw new GraphQLException("Not authenticated");
 
-        var req = await db.FriendRequests.FindAsync(requestId);
+        if (!Guid.TryParse(requestId, out var parsedRequestId))
+            throw new GraphQLException("Invalid request ID format");
+
+        var req = await db.FriendRequests.FindAsync(parsedRequestId);
         if (req == null)
             return false;
 
@@ -289,17 +306,21 @@ public class Mutation
         req.Status = FriendRequestStatus.Cancelled;
         req.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
+        await PublishFriendRequestUpdateAsync(req, redisPubSub, topicEventSender);
         return true;
     }
 
     // Friends - Respond to incoming request
-    public async Task<bool> RespondToFriendRequest(Guid requestId, bool accept, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
+    public async Task<bool> RespondToFriendRequest([ID] string requestId, bool accept, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db, [Service] IRedisPubSubService? redisPubSub, [Service] ITopicEventSender topicEventSender)
     {
         var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
         if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId))
             throw new GraphQLException("Not authenticated");
 
-        var req = await db.FriendRequests.FindAsync(requestId);
+        if (!Guid.TryParse(requestId, out var parsedRequestId))
+            throw new GraphQLException("Invalid request ID format");
+
+        var req = await db.FriendRequests.FindAsync(parsedRequestId);
         if (req == null)
             return false;
 
@@ -314,6 +335,7 @@ public class Mutation
             req.Status = FriendRequestStatus.Rejected;
             req.UpdatedAt = DateTime.UtcNow;
             await db.SaveChangesAsync();
+            await PublishFriendRequestUpdateAsync(req, redisPubSub, topicEventSender);
             return true;
         }
 
@@ -328,18 +350,57 @@ public class Mutation
             db.Friendships.Add(new Friendship { UserId = req.ToUserId, FriendId = req.FromUserId });
 
         await db.SaveChangesAsync();
+        await PublishFriendRequestUpdateAsync(req, redisPubSub, topicEventSender);
         return true;
     }
 
+    private static async Task PublishFriendRequestUpdateAsync(FriendRequest friendRequest, IRedisPubSubService? redisPubSub, ITopicEventSender topicEventSender)
+    {
+        // Don't load related entities - they have circular references that break JSON serialization.
+        // The GraphQL type will resolve them separately from the database.
+        // We just need to send the FriendRequest with IDs only.
+        var cleanRequest = new FriendRequest
+        {
+            Id = friendRequest.Id,
+            FromUserId = friendRequest.FromUserId,
+            ToUserId = friendRequest.ToUserId,
+            Status = friendRequest.Status,
+            CreatedAt = friendRequest.CreatedAt,
+            UpdatedAt = friendRequest.UpdatedAt
+            // Note: FromUser and ToUser are intentionally not set to avoid circular references
+        };
+
+        // Publish through HotChocolate topic system (used by GraphQL subscriptions).
+        await topicEventSender.SendAsync($"friendRequestUpdated_{friendRequest.ToUserId}", cleanRequest);
+
+        // Keep Redis publish for existing diagnostics/integration paths.
+        if (redisPubSub != null)
+        {
+            await redisPubSub.PublishFriendRequestUpdatedAsync(friendRequest.ToUserId, cleanRequest);
+        }
+
+        if (friendRequest.FromUserId != friendRequest.ToUserId)
+        {
+            await topicEventSender.SendAsync($"friendRequestUpdated_{friendRequest.FromUserId}", cleanRequest);
+            if (redisPubSub != null)
+            {
+                await redisPubSub.PublishFriendRequestUpdatedAsync(friendRequest.FromUserId, cleanRequest);
+            }
+        }
+    }
+
     // Friends - Remove friend
-    public async Task<bool> RemoveFriend(Guid userId, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
+    public async Task<bool> RemoveFriend([ID] string userId, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
     {
         var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
         if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId))
             throw new GraphQLException("Not authenticated");
 
+        if (!Guid.TryParse(userId, out var targetUserId))
+            throw new GraphQLException("Invalid user ID format");
+
         var edges = await db.Friendships
-            .Where(f => (f.UserId == meId && f.FriendId == userId) || (f.UserId == userId && f.FriendId == meId))
+            .Where(f => (f.UserId == meId && f.FriendId == targetUserId) || (f.UserId == targetUserId && f.FriendId == meId))
             .ToListAsync();
 
         if (edges.Count == 0)
@@ -396,7 +457,7 @@ public class Mutation
 public record RegisterInput(string Email, string Username, string Password);
 public record LoginInput(string Email, string Password);
 public record CreateConversationInput(ConversationType Type, string? Name);
-public record SendMessageInput(Guid ConversationId, string Content);
+public record SendMessageInput(string ConversationId, string Content);
 
 // Output types
 public class AuthPayload
