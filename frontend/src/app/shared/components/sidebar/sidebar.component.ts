@@ -1,7 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { FriendRequestService } from '../../../core/services/friend-request.service';
 import { NavItemComponent } from '../nav-item/nav-item.component';
 import { ProfileSectionComponent } from '../profile-section/profile-section.component';
 
@@ -12,11 +13,16 @@ import { ProfileSectionComponent } from '../profile-section/profile-section.comp
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
+  protected friendRequestService = inject(FriendRequestService);
 
   protected readonly isExpanded = signal(false);
+
+  ngOnInit() {
+    this.friendRequestService.initialize();
+  }
 
   onToggleSidebar() {
     this.isExpanded.update(v => !v);
