@@ -1,13 +1,12 @@
-import { ApolloClient, InMemoryCache, ApolloLink } from '@apollo/client/core';
+import { ApolloClient, InMemoryCache, split } from '@apollo/client/core';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
 import { HttpLink } from '@apollo/client/link/http';
 import { SetContextLink } from '@apollo/client/link/context';
+import { getMainDefinition } from '@apollo/client/utilities';
 
 const httpLink = new HttpLink({
-  // This backend exposes the GraphQL HTTP executor at /graphql/schema
-  // (GET /graphql/schema returns SDL; GET/POST with `?query=` executes operations)
-  uri: 'http://localhost:5000/graphql/schema',
+  uri: 'http://localhost:5000/graphql',
 });
 
 const authLink = new SetContextLink((prevContext, operation) => {
@@ -24,24 +23,53 @@ const authLink = new SetContextLink((prevContext, operation) => {
 
 const wsLink = new GraphQLWsLink(
   createClient({
-    url: 'ws://localhost:5000/graphql',
+    url: () => {
+      const token = localStorage.getItem('auth_token');
+      const encodedToken = token ? encodeURIComponent(token) : '';
+      const wsUrl = encodedToken
+        ? `ws://localhost:5000/graphql?access_token=${encodedToken}`
+        : 'ws://localhost:5000/graphql';
+      console.log('[WS] Connecting to:', wsUrl);
+      return wsUrl;
+    },
     connectionParams: () => {
       const token = localStorage.getItem('auth_token');
+      console.log('[WS] Sending connection params with token:', !!token);
       return {
         authorization: token ? `Bearer ${token}` : '',
       };
     },
+    on: {
+      connected: () => {
+        console.log('[WS] WebSocket connected');
+      },
+      error: (error) => {
+        console.error('[WS] WebSocket error:', error);
+      },
+      closed: () => {
+        console.log('[WS] WebSocket closed');
+      },
+    },
+    shouldRetry: () => {
+      console.log('[WS] Retrying WebSocket connection');
+      return true;
+    },
   })
 );
 
-// Custom link that routes subscriptions to WebSocket and everything else to HTTP
-const httpOrWsLink = new ApolloLink((operation, forward) => {
-  const definition = operation.query.definitions[0] as { operation?: string };
-  if (definition.operation === 'subscription') {
-    return wsLink.request(operation);
-  }
-  return authLink.concat(httpLink).request(operation, forward);
-});
+const authedHttpLink = authLink.concat(httpLink);
+
+// Route subscriptions to WebSocket and queries/mutations to HTTP.
+const httpOrWsLink = split(
+  ({ query }) => {
+    const definition = getMainDefinition(query);
+    const operation = definition.kind === 'OperationDefinition' ? definition.operation : 'unknown';
+    console.log('[APOLLO] Operation:', operation);
+    return definition.kind === 'OperationDefinition' && definition.operation === 'subscription';
+  },
+  wsLink,
+  authedHttpLink
+);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createApollo(): any {
