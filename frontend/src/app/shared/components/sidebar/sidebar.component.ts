@@ -16,7 +16,7 @@ import { ProfileSectionComponent } from '../profile-section/profile-section.comp
 export class SidebarComponent implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
-  protected friendRequestService = inject(FriendRequestService);
+  protected friendRequestService: FriendRequestService = inject(FriendRequestService);
 
   protected readonly isExpanded = signal(false);
 
