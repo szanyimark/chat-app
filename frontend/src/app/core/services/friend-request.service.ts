@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Apollo } from 'apollo-angular';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 import { GET_FRIEND_REQUESTS } from '../graphql/operations/queries';
@@ -35,7 +35,8 @@ export class FriendRequestService {
   // Emits when a friend request is accepted (signals friends list should reload)
   friendRequestAccepted$ = new Subject<void>();
   
-  private subscriptionActive = false;
+  private currentSubscription: Subscription | null = null;
+  private currentUserId: string | null = null;
 
   initialize() {
     const user = this.authService.currentUser();
@@ -43,12 +44,18 @@ export class FriendRequestService {
       this.authService.fetchCurrentUser().subscribe({
         next: (me) => {
           if (me?.id) {
+            this.clearCacheAndReset();
             this.startSubscription(me.id);
             this.loadFriendRequests();
           }
         }
       });
       return;
+    }
+
+    // If switching to a different user, clear cache first
+    if (this.currentUserId && this.currentUserId !== user.id) {
+      this.clearCacheAndReset();
     }
 
     this.startSubscription(user.id);
@@ -99,29 +106,42 @@ export class FriendRequestService {
   }
 
   private startSubscription(userId: string) {
-    if (this.subscriptionActive) {
+    // If already subscribed to the same user, don't re-subscribe
+    if (this.currentSubscription && this.currentUserId === userId) {
       return;
     }
 
-    this.subscriptionActive = true;
+    // Unsubscribe from any previous subscription
+    if (this.currentSubscription) {
+      this.currentSubscription.unsubscribe();
+    }
 
-    this.apollo.subscribe<{ friendRequestUpdated: FriendRequest }>({
+    // Clear request state when switching users
+    this.incomingRequests.set([]);
+    this.outgoingRequests.set([]);
+
+    this.currentUserId = userId;
+
+    this.currentSubscription = this.apollo.subscribe<{ friendRequestUpdated: FriendRequest }>({
       query: FRIEND_REQUEST_UPDATED,
       variables: { userId }
     }).subscribe({
       next: (result) => {
-        console.log('Subscription update received:', result.data?.friendRequestUpdated);
+        const update = result.data?.friendRequestUpdated;
+        console.log('Subscription update received:', update);
         this.loadFriendRequests();
-        // Any friend-request update can impact the friends tab (e.g. accepted outgoing request).
-        this.friendRequestAccepted$.next();
+        // Only accepted requests change the friends list.
+        if (update?.status === 'ACCEPTED') {
+          this.friendRequestAccepted$.next();
+        }
       },
       error: () => {
-        this.subscriptionActive = false;
+        this.currentSubscription = null;
         // Retry after delay
         setTimeout(() => this.startSubscription(userId), 2000);
       },
       complete: () => {
-        this.subscriptionActive = false;
+        this.currentSubscription = null;
         // Retry after delay
         setTimeout(() => this.startSubscription(userId), 2000);
       }
@@ -134,5 +154,13 @@ export class FriendRequestService {
 
   get pendingOutgoing() {
     return this.outgoingRequests().filter(r => r.status === 'PENDING');
+  }
+
+  private clearCacheAndReset() {
+    // Clear Apollo cache to prevent data pollution when switching users
+    this.apollo.client.cache.reset();
+    // Clear local state
+    this.incomingRequests.set([]);
+    this.outgoingRequests.set([]);
   }
 }
