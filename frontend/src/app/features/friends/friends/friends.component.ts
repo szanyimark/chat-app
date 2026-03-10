@@ -46,7 +46,6 @@ export class FriendsComponent implements OnInit, OnDestroy {
     this.friendService.friendsChanged$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(() => {
-      console.log('Friends changed event received, reloading friends');
       this.loadFriends();
     });
 

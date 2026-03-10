@@ -131,10 +131,10 @@ export class ChatsComponent implements OnInit {
   }
 
   onNewChat() {
-    console.log('New chat clicked');
+    // TODO: implement new chat workflow
   }
 
   onSendMessage(message: string) {
-    console.log('Send message:', message);
+    // TODO: implement send message workflow
   }
 }

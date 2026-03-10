@@ -132,7 +132,6 @@ export class FriendService {
     }).subscribe({
       next: (result) => {
         const update = result.data?.friendRequestUpdated;
-        console.log('Subscription update received:', update);
         this.loadFriendRequests();
         // Only accepted requests change the friends list.
         if (update?.status === 'ACCEPTED') {
@@ -156,7 +155,6 @@ export class FriendService {
       variables: { userId }
     }).subscribe({
       next: () => {
-        console.log('Friendship update received');
         this.friendsChanged$.next();
       },
       error: () => {

@@ -262,7 +262,6 @@ public class Mutation
             existing.Status = FriendRequestStatus.Pending;
             existing.UpdatedAt = DateTime.UtcNow;
             await db.SaveChangesAsync();
-            System.Console.WriteLine($"[DEBUG] Re-sending friend request from {meId} to {targetUserId}");
             await PublishFriendRequestUpdateAsync(existing, redisPubSub, topicEventSender);
             return existing;
         }
@@ -278,7 +277,6 @@ public class Mutation
 
         db.FriendRequests.Add(request);
         await db.SaveChangesAsync();
-        System.Console.WriteLine($"[DEBUG] Sending new friend request from {meId} to {targetUserId}");
         await PublishFriendRequestUpdateAsync(request, redisPubSub, topicEventSender);
         return request;
     }

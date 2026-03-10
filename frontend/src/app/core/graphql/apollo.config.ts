@@ -26,34 +26,24 @@ const wsLink = new GraphQLWsLink(
     url: () => {
       const token = localStorage.getItem('auth_token');
       const encodedToken = token ? encodeURIComponent(token) : '';
-      const wsUrl = encodedToken
+      return encodedToken
         ? `ws://localhost:5000/graphql?access_token=${encodedToken}`
         : 'ws://localhost:5000/graphql';
-      console.log('[WS] Connecting to:', wsUrl);
-      return wsUrl;
     },
     connectionParams: () => {
       const token = localStorage.getItem('auth_token');
-      console.log('[WS] Sending connection params with token:', !!token);
       return {
         authorization: token ? `Bearer ${token}` : '',
       };
     },
     on: {
-      connected: () => {
-        console.log('[WS] WebSocket connected');
-      },
+      connected: () => {},
       error: (error) => {
         console.error('[WS] WebSocket error:', error);
       },
-      closed: () => {
-        console.log('[WS] WebSocket closed');
-      },
+      closed: () => {},
     },
-    shouldRetry: () => {
-      console.log('[WS] Retrying WebSocket connection');
-      return true;
-    },
+    shouldRetry: () => true,
   })
 );
 
@@ -63,8 +53,6 @@ const authedHttpLink = authLink.concat(httpLink);
 const httpOrWsLink = split(
   ({ query }) => {
     const definition = getMainDefinition(query);
-    const operation = definition.kind === 'OperationDefinition' ? definition.operation : 'unknown';
-    console.log('[APOLLO] Operation:', operation);
     return definition.kind === 'OperationDefinition' && definition.operation === 'subscription';
   },
   wsLink,
