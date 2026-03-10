@@ -119,6 +119,22 @@ export class FriendsComponent implements OnInit, OnDestroy {
     return this.friendService.pendingOutgoing;
   }
 
+  get filteredIncomingRequests(): FriendWithStatus[] {
+    const query = this.searchQuery().toLowerCase();
+    if (!query) return this.pendingIncomingRequests;
+    return this.pendingIncomingRequests.filter(request => 
+      request.username.toLowerCase().includes(query)
+    );
+  }
+
+  get filteredOutgoingRequests(): FriendWithStatus[] {
+    const query = this.searchQuery().toLowerCase();
+    if (!query) return this.pendingOutgoingRequests;
+    return this.pendingOutgoingRequests.filter(request => 
+      request.username.toLowerCase().includes(query)
+    );
+  }
+
   get pendingRequestsCount(): number {
     return this.pendingIncomingRequests.length;
   }
@@ -129,6 +145,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
 
   setActiveTab(tab: 'friends' | 'requests') {
     this.activeTab.set(tab);
+    this.searchQuery.set('');
   }
 
   getInitials(name: string): string {

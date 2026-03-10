@@ -98,13 +98,19 @@
             </div>
           }
         } @else {
-          @if (pendingIncomingRequests.length === 0 && pendingOutgoingRequests.length === 0) {
-            <div class="empty">No pending requests</div>
+          @if (filteredIncomingRequests.length === 0 && filteredOutgoingRequests.length === 0) {
+            <div class="empty">
+              @if (searchQuery()) {
+                No requests found
+              } @else {
+                No pending requests
+              }
+            </div>
           }
 
-          @if (pendingIncomingRequests.length > 0) {
+          @if (filteredIncomingRequests.length > 0) {
             <div class="request-section-title">Requests to you</div>
-            @for (request of pendingIncomingRequests; track request.friendshipId) {
+            @for (request of filteredIncomingRequests; track request.friendshipId) {
               <div class="request-item">
                 <div class="avatar">
                   @if (request.avatar; as avatar) {
@@ -136,9 +142,9 @@
             }
           }
 
-          @if (pendingOutgoingRequests.length > 0) {
+          @if (filteredOutgoingRequests.length > 0) {
             <div class="request-section-title">Requests from you</div>
-            @for (request of pendingOutgoingRequests; track request.friendshipId) {
+            @for (request of filteredOutgoingRequests; track request.friendshipId) {
               <div class="request-item">
                 <div class="avatar">
                   @if (request.avatar; as avatar) {
