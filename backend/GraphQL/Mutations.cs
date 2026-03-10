@@ -390,7 +390,7 @@ public class Mutation
     }
 
     // Friends - Remove friend
-    public async Task<bool> RemoveFriend([ID] string userId, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db)
+    public async Task<bool> RemoveFriend([ID] string userId, [Service] IHttpContextAccessor httpContextAccessor, [Service] AppDbContext db, [Service] ITopicEventSender topicEventSender)
     {
         var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
         if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId))
@@ -408,6 +408,14 @@ public class Mutation
 
         db.Friendships.RemoveRange(edges);
         await db.SaveChangesAsync();
+
+        // Notify both users so their friends list can refresh in real time.
+        await topicEventSender.SendAsync($"friendshipUpdated_{meId}", true);
+        if (targetUserId != meId)
+        {
+            await topicEventSender.SendAsync($"friendshipUpdated_{targetUserId}", true);
+        }
+
         return true;
     }
 

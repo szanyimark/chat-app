@@ -92,4 +92,42 @@ public class Subscription
 
         return await topicEventReceiver.SubscribeAsync<FriendRequest>(topic, cancellationToken);
     }
+
+    [Subscribe(With = nameof(SubscribeToFriendshipUpdated))]
+    public bool FriendshipUpdated(
+        [ID] string userId,
+        [EventMessage] bool updated,
+        [Service] ILogger<Subscription> logger)
+    {
+        logger.LogInformation("FriendshipUpdated event delivered for userId argument {UserId}", userId);
+        return updated;
+    }
+
+    public async ValueTask<ISourceStream<bool>> SubscribeToFriendshipUpdated(
+        [ID] string userId,
+        [Service] IHttpContextAccessor httpContextAccessor,
+        [Service] ITopicEventReceiver topicEventReceiver,
+        [Service] ILogger<Subscription> logger,
+        CancellationToken cancellationToken)
+    {
+        logger.LogInformation("FriendshipUpdated subscription request received. userId arg: {UserId}", userId);
+
+        if (!Guid.TryParse(userId, out var parsedUserId))
+        {
+            logger.LogWarning("FriendshipUpdated rejected: invalid userId format {UserId}", userId);
+            throw new GraphQLException("Invalid user ID format");
+        }
+
+        var meClaim = httpContextAccessor.HttpContext?.User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(meClaim) || !Guid.TryParse(meClaim, out var meId) || meId != parsedUserId)
+        {
+            logger.LogWarning("FriendshipUpdated rejected: not allowed. meClaim={MeClaim}, parsedUserId={ParsedUserId}", meClaim, parsedUserId);
+            throw new GraphQLException("Not allowed");
+        }
+
+        var topic = $"friendshipUpdated_{parsedUserId}";
+        logger.LogInformation("FriendshipUpdated accepted for user {UserId}. Subscribing to topic {Topic}", parsedUserId, topic);
+
+        return await topicEventReceiver.SubscribeAsync<bool>(topic, cancellationToken);
+    }
 }

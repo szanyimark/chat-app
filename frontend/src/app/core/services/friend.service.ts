@@ -4,7 +4,7 @@ import { Subject, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 import { GET_FRIEND_REQUESTS } from '../graphql/operations/queries';
-import { FRIEND_REQUEST_UPDATED } from '../graphql/operations/subscriptions';
+import { FRIEND_REQUEST_UPDATED, FRIENDSHIP_UPDATED } from '../graphql/operations/subscriptions';
 import { FriendRequest } from '../graphql/generated/graphql';
 
 export interface FriendRequestWithUser {
@@ -18,7 +18,7 @@ export interface FriendRequestWithUser {
 @Injectable({
   providedIn: 'root'
 })
-export class FriendRequestService {
+export class FriendService {
   private apollo = inject(Apollo);
   private authService = inject(AuthService);
 
@@ -32,10 +32,11 @@ export class FriendRequestService {
     this.incomingRequests().filter(r => r.status === 'PENDING').length
   );
   
-  // Emits when a friend request is accepted (signals friends list should reload)
-  friendRequestAccepted$ = new Subject<void>();
+  // Emits when friends list should reload (request accepted, friend removed, etc.)
+  friendsChanged$ = new Subject<void>();
   
   private currentSubscription: Subscription | null = null;
+  private currentFriendshipSubscription: Subscription | null = null;
   private currentUserId: string | null = null;
 
   initialize() {
@@ -115,6 +116,9 @@ export class FriendRequestService {
     if (this.currentSubscription) {
       this.currentSubscription.unsubscribe();
     }
+    if (this.currentFriendshipSubscription) {
+      this.currentFriendshipSubscription.unsubscribe();
+    }
 
     // Clear request state when switching users
     this.incomingRequests.set([]);
@@ -132,7 +136,7 @@ export class FriendRequestService {
         this.loadFriendRequests();
         // Only accepted requests change the friends list.
         if (update?.status === 'ACCEPTED') {
-          this.friendRequestAccepted$.next();
+          this.friendsChanged$.next();
         }
       },
       error: () => {
@@ -142,6 +146,26 @@ export class FriendRequestService {
       },
       complete: () => {
         this.currentSubscription = null;
+        // Retry after delay
+        setTimeout(() => this.startSubscription(userId), 2000);
+      }
+    });
+
+    this.currentFriendshipSubscription = this.apollo.subscribe<{ friendshipUpdated: boolean }>({
+      query: FRIENDSHIP_UPDATED,
+      variables: { userId }
+    }).subscribe({
+      next: () => {
+        console.log('Friendship update received');
+        this.friendsChanged$.next();
+      },
+      error: () => {
+        this.currentFriendshipSubscription = null;
+        // Retry after delay
+        setTimeout(() => this.startSubscription(userId), 2000);
+      },
+      complete: () => {
+        this.currentFriendshipSubscription = null;
         // Retry after delay
         setTimeout(() => this.startSubscription(userId), 2000);
       }

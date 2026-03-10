@@ -5,9 +5,9 @@ import { Apollo } from 'apollo-angular';
 import { Subject } from 'rxjs';
 import { map, takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../core/auth/auth.service';
-import { FriendRequestService } from '../../../core/services/friend-request.service';
+import { FriendService } from '../../../core/services/friend.service';
 import { GET_MY_FRIENDS } from '../../../core/graphql/operations/queries';
-import { RESPOND_TO_FRIEND_REQUEST } from '../../../core/graphql/operations/mutations';
+import { RESPOND_TO_FRIEND_REQUEST, REMOVE_FRIEND } from '../../../core/graphql/operations/mutations';
 import { User } from '../../../core/graphql/generated/graphql';
 import { AddFriendComponent } from '../add-friend/add-friend.component';
 import "primeicons/primeicons.css";
@@ -30,7 +30,7 @@ interface FriendWithStatus {
 export class FriendsComponent implements OnInit, OnDestroy {
   private apollo = inject(Apollo);
   private authService = inject(AuthService);
-  protected friendRequestService = inject(FriendRequestService);
+  protected friendService = inject(FriendService);
   private destroy$ = new Subject<void>();
 
   friends = signal<FriendWithStatus[]>([]);
@@ -42,11 +42,11 @@ export class FriendsComponent implements OnInit, OnDestroy {
   currentUserId: string | null = null;
 
   ngOnInit() {
-    // Listen for accepted friend requests and reload friends list
-    this.friendRequestService.friendRequestAccepted$.pipe(
+    // Listen for friends list changes (accepted requests, removals, etc.)
+    this.friendService.friendsChanged$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(() => {
-      console.log('Friend request accepted event received, reloading friends');
+      console.log('Friends changed event received, reloading friends');
       this.loadFriends();
     });
 
@@ -112,11 +112,11 @@ export class FriendsComponent implements OnInit, OnDestroy {
   }
 
   get pendingIncomingRequests(): FriendWithStatus[] {
-    return this.friendRequestService.pendingIncoming;
+    return this.friendService.pendingIncoming;
   }
 
   get pendingOutgoingRequests(): FriendWithStatus[] {
-    return this.friendRequestService.pendingOutgoing;
+    return this.friendService.pendingOutgoing;
   }
 
   get pendingRequestsCount(): number {
@@ -151,7 +151,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
       next: () => {
         // Reload both friends and requests to reflect the change
         this.loadFriends();
-        this.friendRequestService.loadFriendRequests();
+        this.friendService.loadFriendRequests();
       },
       error: (err) => {
         console.error('Failed to accept friend request:', err);
@@ -170,7 +170,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: () => {
         // Reload requests to remove the rejected one
-        this.friendRequestService.loadFriendRequests();
+        this.friendService.loadFriendRequests();
       },
       error: (err) => {
         console.error('Failed to reject friend request:', err);
@@ -179,18 +179,37 @@ export class FriendsComponent implements OnInit, OnDestroy {
     });
   }
 
-  removeFriend(friendId: string) {
-    // TODO: Implement remove friend
-    console.log('Remove friend:', friendId);
+  removeFriend(friendId: string, friendUsername: string) {
+    const shouldRemove = window.confirm(`Remove ${friendUsername} from your friends?`);
+    if (!shouldRemove) {
+      return;
+    }
+
+    this.apollo.mutate<{ removeFriend: boolean }>({
+      mutation: REMOVE_FRIEND,
+      variables: { userId: friendId }
+    }).subscribe({
+      next: (result) => {
+        if (!result.data?.removeFriend) {
+          this.error.set('Unable to remove friend');
+          return;
+        }
+        this.loadFriends();
+      },
+      error: (err) => {
+        console.error('Failed to remove friend:', err);
+        this.error.set(err.message ?? 'Failed to remove friend');
+      }
+    });
   }
 
   onFriendRequestSent() {
-    this.friendRequestService.loadFriendRequests();
+    this.friendService.loadFriendRequests();
   }
 
   private initializeForCurrentUser(userId: string) {
     this.currentUserId = userId;
-    this.friendRequestService.initialize();
+    this.friendService.initialize();
     this.loadFriends();
   }
 }

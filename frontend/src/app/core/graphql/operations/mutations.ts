@@ -116,3 +116,9 @@ export const RESPOND_TO_FRIEND_REQUEST = gql`
     respondToFriendRequest(requestId: $requestId, accept: $accept)
   }
 `;
+
+export const REMOVE_FRIEND = gql`
+  mutation RemoveFriend($userId: ID!) {
+    removeFriend(userId: $userId)
+  }
+`;

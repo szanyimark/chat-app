@@ -54,3 +54,9 @@ export const FRIEND_REQUEST_UPDATED = gql`
     }
   }
 `;
+
+export const FRIENDSHIP_UPDATED = gql`
+  subscription FriendshipUpdated($userId: ID!) {
+    friendshipUpdated(userId: $userId)
+  }
+`;
