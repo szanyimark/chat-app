@@ -10,6 +10,7 @@ import { GET_MY_FRIENDS } from '../../../core/graphql/operations/queries';
 import { RESPOND_TO_FRIEND_REQUEST } from '../../../core/graphql/operations/mutations';
 import { User } from '../../../core/graphql/generated/graphql';
 import { AddFriendComponent } from '../add-friend/add-friend.component';
+import "primeicons/primeicons.css";
 
 interface FriendWithStatus {
   id: string;
