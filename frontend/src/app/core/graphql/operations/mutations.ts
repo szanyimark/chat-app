@@ -110,3 +110,9 @@ export const SEND_FRIEND_REQUEST = gql`
     }
   }
 `;
+
+export const RESPOND_TO_FRIEND_REQUEST = gql`
+  mutation RespondToFriendRequest($requestId: ID!, $accept: Boolean!) {
+    respondToFriendRequest(requestId: $requestId, accept: $accept)
+  }
+`;

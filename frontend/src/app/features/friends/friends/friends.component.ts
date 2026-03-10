@@ -7,6 +7,7 @@ import { map, takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../core/auth/auth.service';
 import { FriendRequestService } from '../../../core/services/friend-request.service';
 import { GET_MY_FRIENDS } from '../../../core/graphql/operations/queries';
+import { RESPOND_TO_FRIEND_REQUEST } from '../../../core/graphql/operations/mutations';
 import { User } from '../../../core/graphql/generated/graphql';
 import { AddFriendComponent } from '../add-friend/add-friend.component';
 
@@ -40,6 +41,14 @@ export class FriendsComponent implements OnInit, OnDestroy {
   currentUserId: string | null = null;
 
   ngOnInit() {
+    // Listen for accepted friend requests and reload friends list
+    this.friendRequestService.friendRequestAccepted$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      console.log('Friend request accepted event received, reloading friends');
+      this.loadFriends();
+    });
+
     const user = this.authService.currentUser();
     if (user?.id) {
       this.initializeForCurrentUser(user.id);
@@ -130,14 +139,43 @@ export class FriendsComponent implements OnInit, OnDestroy {
       .slice(0, 2);
   }
 
-  acceptRequest(friendId: string) {
-    // TODO: Implement accept friend request
-    console.log('Accept request:', friendId);
+  acceptRequest(requestId: string) {
+    this.apollo.mutate({
+      mutation: RESPOND_TO_FRIEND_REQUEST,
+      variables: {
+        requestId,
+        accept: true
+      }
+    }).subscribe({
+      next: () => {
+        // Reload both friends and requests to reflect the change
+        this.loadFriends();
+        this.friendRequestService.loadFriendRequests();
+      },
+      error: (err) => {
+        console.error('Failed to accept friend request:', err);
+        this.error.set(err.message ?? 'Failed to accept friend request');
+      }
+    });
   }
 
-  rejectRequest(friendId: string) {
-    // TODO: Implement reject friend request
-    console.log('Reject request:', friendId);
+  rejectRequest(requestId: string) {
+    this.apollo.mutate({
+      mutation: RESPOND_TO_FRIEND_REQUEST,
+      variables: {
+        requestId,
+        accept: false
+      }
+    }).subscribe({
+      next: () => {
+        // Reload requests to remove the rejected one
+        this.friendRequestService.loadFriendRequests();
+      },
+      error: (err) => {
+        console.error('Failed to reject friend request:', err);
+        this.error.set(err.message ?? 'Failed to reject friend request');
+      }
+    });
   }
 
   removeFriend(friendId: string) {
@@ -151,6 +189,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
 
   private initializeForCurrentUser(userId: string) {
     this.currentUserId = userId;
+    this.friendRequestService.initialize();
     this.loadFriends();
   }
 }

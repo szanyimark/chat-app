@@ -1,5 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Apollo } from 'apollo-angular';
+import { Subject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 import { GET_FRIEND_REQUESTS } from '../graphql/operations/queries';
@@ -30,6 +31,9 @@ export class FriendRequestService {
   pendingCount = computed(() => 
     this.incomingRequests().filter(r => r.status === 'PENDING').length
   );
+  
+  // Emits when a friend request is accepted (signals friends list should reload)
+  friendRequestAccepted$ = new Subject<void>();
   
   private subscriptionActive = false;
 
@@ -105,8 +109,11 @@ export class FriendRequestService {
       query: FRIEND_REQUEST_UPDATED,
       variables: { userId }
     }).subscribe({
-      next: () => {
+      next: (result) => {
+        console.log('Subscription update received:', result.data?.friendRequestUpdated);
         this.loadFriendRequests();
+        // Any friend-request update can impact the friends tab (e.g. accepted outgoing request).
+        this.friendRequestAccepted$.next();
       },
       error: () => {
         this.subscriptionActive = false;

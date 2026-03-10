@@ -256,6 +256,14 @@ export type SendFriendRequestMutationVariables = Exact<{
 
 export type SendFriendRequestMutation = { __typename?: 'Mutation', sendFriendRequest: { __typename?: 'FriendRequest', id: string, status: FriendRequestStatus, createdAt: any, fromUser: { __typename?: 'User', id: string, username: string, tag: string }, toUser: { __typename?: 'User', id: string, username: string, tag: string } } };
 
+export type RespondToFriendRequestMutationVariables = Exact<{
+  requestId: Scalars['ID']['input'];
+  accept: Scalars['Boolean']['input'];
+}>;
+
+
+export type RespondToFriendRequestMutation = { __typename?: 'Mutation', respondToFriendRequest: boolean };
+
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -494,6 +502,22 @@ export const SendFriendRequestDocument = gql`
   })
   export class SendFriendRequestGQL extends Apollo.Mutation<SendFriendRequestMutation, SendFriendRequestMutationVariables> {
     document = SendFriendRequestDocument;
+    
+    constructor(apollo: Apollo.Apollo) {
+      super(apollo);
+    }
+  }
+export const RespondToFriendRequestDocument = gql`
+    mutation RespondToFriendRequest($requestId: ID!, $accept: Boolean!) {
+  respondToFriendRequest(requestId: $requestId, accept: $accept)
+}
+    `;
+
+  @Injectable({
+    providedIn: 'root'
+  })
+  export class RespondToFriendRequestGQL extends Apollo.Mutation<RespondToFriendRequestMutation, RespondToFriendRequestMutationVariables> {
+    document = RespondToFriendRequestDocument;
     
     constructor(apollo: Apollo.Apollo) {
       super(apollo);
