@@ -63,7 +63,19 @@ const httpOrWsLink = split(
 export function createApollo(): any {
   return new ApolloClient({
     link: httpOrWsLink,
-    cache: new InMemoryCache(),
+    cache: new InMemoryCache({
+      typePolicies: {
+        Query: {
+          fields: {
+            // These lists are fully replaced on each fetch.
+            //avoids warning in console
+            myIncomingFriendRequests: { merge: false },
+            myOutgoingFriendRequests: { merge: false },
+            myFriends: { merge: false },
+          },
+        },
+      },
+    }),
     defaultOptions: {
       watchQuery: {
         fetchPolicy: 'cache-and-network',
