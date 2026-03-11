@@ -1,7 +1,9 @@
-import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ConversationType } from '../../../core/graphql/generated/graphql';
+import { ConversationService } from '../../../core/services/conversation.service';
+import { AuthService } from '../../../core/auth/auth.service';
 
 interface ConversationWithLastMessage {
   id: string;
@@ -28,11 +30,18 @@ interface ConversationWithLastMessage {
   styleUrl: './chat-list.component.scss'
 })
 export class ChatListComponent {
-  @Input() conversations: ConversationWithLastMessage[] = [];
-  @Input() loading = true;
-  @Input() error: string | null = null;
+  private conversationService = inject(ConversationService);
+  private authService = inject(AuthService);
+
+  conversations = this.conversationService.conversations;
+  loading = this.conversationService.loadingConversations;
+  error = this.conversationService.errorConversations;
+
+  get currentUserId(): string | null {
+    return this.authService.currentUser()?.id ?? null;
+  }
+
   @Input() selectedConversationId: string | null = null;
-  @Input() currentUserId: string | null = null;
 
   @Output() conversationSelected = new EventEmitter<string>();
   @Output() newChatClicked = new EventEmitter<void>();
@@ -41,8 +50,8 @@ export class ChatListComponent {
 
   get filteredConversations(): ConversationWithLastMessage[] {
     const query = this.searchQuery().toLowerCase();
-    if (!query) return this.conversations;
-    return this.conversations.filter(conv => 
+    if (!query) return this.conversations();
+    return this.conversations().filter(conv => 
       this.getConversationName(conv).toLowerCase().includes(query)
     );
   }

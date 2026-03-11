@@ -5,11 +5,12 @@ import { ConversationService, ConversationWithLastMessage } from '../../../core/
 import { ChatListComponent } from '../chat-list/chat-list.component';
 import { ChatComponent, ChatConversation } from '../chat/chat.component';
 import { ChatDetailsComponent, ConversationDetails } from '../chat-details/chat-details.component';
+import { NewChatDialogComponent } from '../new-chat-dialog/new-chat-dialog.component';
 
 @Component({
   selector: 'app-chats',
   standalone: true,
-  imports: [CommonModule, ChatListComponent, ChatComponent, ChatDetailsComponent],
+  imports: [CommonModule, ChatListComponent, ChatComponent, ChatDetailsComponent, NewChatDialogComponent],
   templateUrl: './chats.component.html',
   styleUrl: './chats.component.scss'
 })
@@ -21,6 +22,7 @@ export class ChatsComponent implements OnInit {
   loading = this.conversationService.loadingConversations;
   error = this.conversationService.errorConversations;
   selectedConversationId = signal<string | null>(null);
+  showNewChatDialog = signal(false);
 
   currentUserId: string | null = null;
 
@@ -73,7 +75,17 @@ export class ChatsComponent implements OnInit {
   }
 
   onNewChat() {
-    // TODO: implement new chat workflow
+    this.showNewChatDialog.set(true);
+  }
+
+  onNewChatDialogCancel() {
+    this.showNewChatDialog.set(false);
+  }
+
+  onConversationCreated(conversationId: string) {
+    this.conversationService.loadConversations();
+    this.onConversationSelected(conversationId);
+    this.showNewChatDialog.set(false);
   }
 
   onSendMessage(message: string) {

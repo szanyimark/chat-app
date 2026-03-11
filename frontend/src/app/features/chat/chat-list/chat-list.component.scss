@@ -11,7 +11,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px;
+    padding: 2px;
     border-bottom: 1px solid #e0e0e0;
 
     h2 {
@@ -75,7 +75,7 @@
   .error,
   .empty {
     text-align: center;
-    padding: 32px 16px;
+    padding: 2px;
     color: #666;
   }
 
@@ -84,9 +84,13 @@
   }
 
   .chat-item {
+    box-sizing: border-box;
     display: flex;
     align-items: center;
-    padding: 12px;
+    padding: 2px 8px;
+    min-height: 56px;
+    max-height: 56px;
+    overflow: hidden;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -105,7 +109,7 @@
       border-radius: 50%;
       overflow: hidden;
       flex-shrink: 0;
-      margin-right: 12px;
+      margin-right: 10px;
 
       img {
         width: 100%;
@@ -129,26 +133,44 @@
     .chat-info {
       flex: 1;
       min-width: 0;
+      align-self: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
 
       .chat-header {
+        height: 18px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 4px;
+        min-width: 0;
+        margin-bottom: 0;
 
         .chat-name {
+          flex: 1;
+          min-width: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
           font-weight: 600;
           font-size: 15px;
           color: #333;
         }
 
         .message-time {
+          flex-shrink: 0;
+          margin-left: 8px;
           font-size: 12px;
           color: #999;
         }
       }
 
       .last-message {
+        display: block;
+        margin: 0;
+        line-height: 1.2;
+        max-width: 100%;
         font-size: 13px;
         color: #666;
         white-space: nowrap;
@@ -165,6 +187,7 @@
         }
 
         &.empty {
+          text-align: left;
           color: #aaa;
           font-style: italic;
         }

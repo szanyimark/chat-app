@@ -1,12 +1,14 @@
 <div class="chats-page">
+  <app-new-chat-dialog
+    [visible]="showNewChatDialog()"
+    (cancel)="onNewChatDialogCancel()"
+    (conversationCreated)="onConversationCreated($event)"
+  ></app-new-chat-dialog>
+
   <!-- Left Panel: Chat List -->
   <div class="chat-list-panel">
     <app-chat-list
-      [conversations]="conversations()"
-      [loading]="loading()"
-      [error]="error()"
       [selectedConversationId]="selectedConversationId()"
-      [currentUserId]="currentUserId"
       (conversationSelected)="onConversationSelected($event)"
       (newChatClicked)="onNewChat()"
     ></app-chat-list>

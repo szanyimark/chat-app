@@ -1,0 +1,64 @@
+@if (visible) {
+<div class="new-chat-overlay" (click)="closeDialog()">
+  <div class="new-chat-dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h3>New Chat</h3>
+      <button class="close-btn" type="button" (click)="closeDialog()" title="Close">x</button>
+    </div>
+
+    <div class="selected-users-input">
+      @for (user of selectedUsers(); track user.id) {
+        <span class="user-chip">
+          {{ user.username }}
+          <button type="button" (click)="removeUserFromSelection(user.id)" title="Remove">x</button>
+        </span>
+      }
+
+      <input
+        #searchInput
+        type="text"
+        placeholder="Type a name or tag"
+        [ngModel]="query()"
+        (ngModelChange)="onSearchChange($event)"
+      >
+    </div>
+
+    @if (searchingUsers()) {
+      <div class="search-results-state">Searching...</div>
+    } @else if (query() && searchResults().length === 0) {
+      <div class="search-results-state">No users found</div>
+    } @else if (searchResults().length > 0) {
+      <div class="search-results">
+        @for (user of searchResults(); track user.id) {
+          <button type="button" class="search-result-item" (click)="addUserToSelection(user)">
+            <span class="username">{{ user.username }}</span>
+            @if (user.tag) {
+              <span class="tag">{{ user.tag }}</span>
+            }
+          </button>
+        }
+      </div>
+    }
+
+    @if (createError()) {
+      <div class="create-error">{{ createError() }}</div>
+    }
+
+    <div class="dialog-actions">
+      <button type="button" class="cancel-btn" (click)="closeDialog()">Cancel</button>
+      <button
+        type="button"
+        class="create-btn"
+        [disabled]="selectedUsers().length === 0 || creatingConversation()"
+        (click)="createConversation()"
+      >
+        @if (creatingConversation()) {
+          Creating...
+        } @else {
+          Create
+        }
+      </button>
+    </div>
+  </div>
+</div>
+}

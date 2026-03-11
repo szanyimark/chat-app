@@ -132,24 +132,119 @@ public class Mutation
         if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             throw new GraphQLException("Not authenticated");
 
+        var participantIds = new List<Guid>();
+        if (input.ParticipantIds != null)
+        {
+            foreach (var participantId in input.ParticipantIds)
+            {
+                if (!Guid.TryParse(participantId, out var parsedParticipantId))
+                    throw new GraphQLException("Invalid participant ID format");
+
+                if (parsedParticipantId != userId && !participantIds.Contains(parsedParticipantId))
+                {
+                    participantIds.Add(parsedParticipantId);
+                }
+            }
+
+            if (participantIds.Count > 0)
+            {
+                var existingParticipants = await db.Users
+                    .Where(user => participantIds.Contains(user.Id))
+                    .Select(user => user.Id)
+                    .ToListAsync();
+
+                if (existingParticipants.Count != participantIds.Count)
+                    throw new GraphQLException("One or more participants were not found");
+            }
+        }
+
+        // For private chats, reuse existing 1:1 conversation instead of creating duplicates.
+        if (input.Type == ConversationType.Private && participantIds.Count == 1)
+        {
+            var otherUserId = participantIds[0];
+
+            var myConversationIds = await db.ConversationMembers
+                .Where(cm => cm.UserId == userId)
+                .Select(cm => cm.ConversationId)
+                .ToListAsync();
+
+            var existingConversationId = await db.ConversationMembers
+                .Where(cm => cm.UserId == otherUserId && myConversationIds.Contains(cm.ConversationId))
+                .Select(cm => cm.ConversationId)
+                .FirstOrDefaultAsync();
+
+            if (existingConversationId != Guid.Empty)
+            {
+                var existingMemberCount = await db.ConversationMembers
+                    .CountAsync(cm => cm.ConversationId == existingConversationId);
+
+                var existingConversation = await db.Conversations
+                    .FirstOrDefaultAsync(c => c.Id == existingConversationId && c.Type == ConversationType.Private);
+
+                if (existingConversation != null && existingMemberCount == 2)
+                {
+                    return existingConversation;
+                }
+            }
+        }
+
+        var conversationName = input.Name;
+
+        if (input.Type == ConversationType.Group && string.IsNullOrWhiteSpace(conversationName))
+        {
+            var users = await db.Users
+                .Where(user => user.Id == userId || participantIds.Contains(user.Id))
+                .Select(user => new { user.Id, user.Username })
+                .ToListAsync();
+
+            var usernamesById = users.ToDictionary(user => user.Id, user => user.Username);
+            usernamesById.TryGetValue(userId, out var creatorUsername);
+
+            var participantUsernames = participantIds
+                .Where(id => usernamesById.ContainsKey(id))
+                .Select(id => usernamesById[id])
+                .Where(username => !string.IsNullOrWhiteSpace(username))
+                .ToList();
+
+            if (!string.IsNullOrWhiteSpace(creatorUsername))
+            {
+                participantUsernames.Add(creatorUsername);
+            }
+
+            conversationName = participantUsernames.Count > 0
+                ? string.Join(", ", participantUsernames)
+                : null;
+        }
+
         var conversation = new Conversation
         {
             Type = input.Type,
-            Name = input.Name
+            Name = string.IsNullOrWhiteSpace(conversationName) ? null : conversationName.Trim()
         };
 
         db.Conversations.Add(conversation);
         await db.SaveChangesAsync();
 
         // Add creator as member
-        var member = new ConversationMember
+        var creatorMember = new ConversationMember
         {
             ConversationId = conversation.Id,
             UserId = userId,
             Role = MemberRole.Admin
         };
 
-        db.ConversationMembers.Add(member);
+        db.ConversationMembers.Add(creatorMember);
+
+        foreach (var participantId in participantIds)
+        {
+            db.ConversationMembers.Add(new ConversationMember
+            {
+                ConversationId = conversation.Id,
+                UserId = participantId,
+                Role = MemberRole.Member
+            });
+        }
+
         await db.SaveChangesAsync();
 
         return conversation;
@@ -462,7 +557,7 @@ public class Mutation
 // Input types
 public record RegisterInput(string Email, string Username, string Password);
 public record LoginInput(string Email, string Password);
-public record CreateConversationInput(ConversationType Type, string? Name);
+public record CreateConversationInput(ConversationType Type, string? Name, List<string>? ParticipantIds = null);
 public record SendMessageInput(string ConversationId, string Content);
 
 // Output types

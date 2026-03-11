@@ -1,4 +1,6 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Apollo } from 'apollo-angular';
 import { FriendService } from './friend.service';
 import { GET_MY_CONVERSATIONS } from '../graphql/operations/queries';
@@ -30,8 +32,13 @@ export class ConversationService {
   private friendService = inject(FriendService);
   private initialized = false;
   private pendingInitialFriendIds: string[] | null = null;
+  private allConversations = signal<ConversationWithLastMessage[]>([]);
 
-  conversations = signal<ConversationWithLastMessage[]>([]);
+  conversations = computed(() =>
+    this.allConversations().filter(conversation =>
+      conversation.type !== ConversationType.Private || conversation.members.length >= 2
+    )
+  );
   loadingConversations = signal(true);
   errorConversations = signal<string | null>(null);
 
@@ -65,13 +72,19 @@ export class ConversationService {
 
   loadConversations() {
     this.loadingConversations.set(true);
+    this.errorConversations.set(null);
 
     this.apollo.watchQuery<{ myConversations: Conversation[] }>({
       query: GET_MY_CONVERSATIONS,
       fetchPolicy: 'network-only'
     }).valueChanges.subscribe({
       next: (result) => {
+        if (result.loading && !result.data) {
+          return;
+        }
+
         const conversations = result.data?.myConversations ?? [];
+
         const transformed: ConversationWithLastMessage[] = conversations.map(conv => ({
           id: conv.id ?? '',
           type: conv.type ?? ConversationType.Private,
@@ -93,7 +106,26 @@ export class ConversationService {
           } : undefined
         }));
 
-        this.conversations.set(transformed);
+        // Defensive UI dedupe: keep only one private conversation per user pair.
+        const seenPrivatePairs = new Set<string>();
+        const deduped = transformed.filter(conversation => {
+          if (conversation.type !== ConversationType.Private || conversation.members.length !== 2) {
+            return true;
+          }
+
+          const pairKey = [conversation.members[0].id, conversation.members[1].id]
+            .sort()
+            .join(':');
+
+          if (seenPrivatePairs.has(pairKey)) {
+            return false;
+          }
+
+          seenPrivatePairs.add(pairKey);
+          return true;
+        });
+
+        this.allConversations.set(deduped);
         this.loadingConversations.set(false);
 
         if (this.pendingInitialFriendIds) {
@@ -145,7 +177,7 @@ export class ConversationService {
   ensureAllFriendConversations(friendIds: string[]) {
     if (friendIds.length === 0) return;
 
-    const conversations = this.conversations();
+    const conversations = this.allConversations();
 
     friendIds.forEach(friendId => {
       // Check if DM with this friend exists
@@ -161,20 +193,46 @@ export class ConversationService {
     });
   }
 
-  private createDMConversation(friendId: string, friendUsername: string) {
-    this.apollo.mutate<{ createConversation: Conversation }>({
+  /**
+   * Creates a conversation and appends it to the local list.
+   * Returns an Observable that emits the new conversation's id.
+   */
+  createConversation(type: ConversationType, participantIds: string[], name: string | null = null): Observable<string> {
+    return this.apollo.mutate<{ createConversation: Conversation }>({
       mutation: CREATE_CONVERSATION,
-      variables: {
-        input: {
-          type: ConversationType.Private,
-          name: null
+      variables: { input: { type, name, participantIds } }
+    }).pipe(
+      map(result => {
+        const conversation = result.data?.createConversation;
+        if (!conversation?.id) {
+          throw new Error('Unable to create conversation.');
         }
-      }
-    }).subscribe({
-      next: () => {},
-      error: (err) => {
-        console.error(`Failed to create conversation with ${friendUsername}:`, err);
-      }
+
+        const mapped: ConversationWithLastMessage = {
+          id: conversation.id,
+          type: conversation.type ?? type,
+          name: conversation.name,
+          avatar: conversation.avatar,
+          members: (conversation.members ?? []).map(member => ({
+            id: member?.id ?? '',
+            username: member?.username ?? '',
+            avatar: member?.avatar
+          })),
+          lastMessage: undefined
+        };
+
+        this.allConversations.update(existing =>
+          existing.some(item => item.id === mapped.id) ? existing : [mapped, ...existing]
+        );
+
+        return conversation.id;
+      })
+    );
+  }
+
+  private createDMConversation(friendId: string, friendUsername: string) {
+    this.createConversation(ConversationType.Private, [friendId]).subscribe({
+      error: (err) => console.error(`Failed to create conversation with ${friendUsername}:`, err)
     });
   }
 }
