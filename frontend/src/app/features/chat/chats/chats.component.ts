@@ -1,30 +1,10 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Apollo } from 'apollo-angular';
-import { map } from 'rxjs/operators';
 import { AuthService } from '../../../core/auth/auth.service';
-import { GET_MY_CONVERSATIONS } from '../../../core/graphql/operations/queries';
-import { Conversation, ConversationType } from '../../../core/graphql/generated/graphql';
+import { ConversationService, ConversationWithLastMessage } from '../../../core/services/conversation.service';
 import { ChatListComponent } from '../chat-list/chat-list.component';
 import { ChatComponent, ChatConversation } from '../chat/chat.component';
 import { ChatDetailsComponent, ConversationDetails } from '../chat-details/chat-details.component';
-
-interface ConversationWithLastMessage {
-  id: string;
-  type: ConversationType;
-  name?: string | null;
-  avatar?: string | null;
-  members: { id: string; username: string; avatar?: string | null }[];
-  lastMessage?: {
-    id: string;
-    content: string;
-    createdAt: Date;
-    sender: {
-      id: string;
-      username: string;
-    };
-  };
-}
 
 @Component({
   selector: 'app-chats',
@@ -34,12 +14,12 @@ interface ConversationWithLastMessage {
   styleUrl: './chats.component.scss'
 })
 export class ChatsComponent implements OnInit {
-  private apollo = inject(Apollo);
   private authService = inject(AuthService);
+  protected conversationService = inject(ConversationService);
 
-  conversations = signal<ConversationWithLastMessage[]>([]);
-  loading = signal(true);
-  error = signal<string | null>(null);
+  conversations = this.conversationService.conversations;
+  loading = this.conversationService.loadingConversations;
+  error = this.conversationService.errorConversations;
   selectedConversationId = signal<string | null>(null);
 
   currentUserId: string | null = null;
@@ -47,45 +27,7 @@ export class ChatsComponent implements OnInit {
   ngOnInit() {
     const user = this.authService.currentUser();
     this.currentUserId = user?.id ?? null;
-    this.loadConversations();
-  }
-
-  loadConversations() {
-    this.apollo.watchQuery<{ myConversations: Conversation[] }>({
-      query: GET_MY_CONVERSATIONS,
-      fetchPolicy: 'network-only'
-    }).valueChanges.pipe(
-      map(result => result.data?.myConversations ?? [])
-    ).subscribe({
-      next: (conversations) => {
-        const transformed: ConversationWithLastMessage[] = conversations.map(conv => ({
-          id: conv.id ?? '',
-          type: conv.type ?? ConversationType.Private,
-          name: conv.name,
-          avatar: conv.avatar,
-          members: (conv.members ?? []).map(m => ({
-            id: m?.id ?? '',
-            username: m?.username ?? '',
-            avatar: m?.avatar
-          })),
-          lastMessage: conv.messages && conv.messages.length > 0 && conv.messages[0] ? {
-            id: conv.messages[0].id ?? '',
-            content: conv.messages[0].content ?? '',
-            createdAt: new Date(conv.messages[0].createdAt),
-            sender: {
-              id: conv.messages[0].sender?.id ?? '',
-              username: conv.messages[0].sender?.username ?? ''
-            }
-          } : undefined
-        }));
-        this.conversations.set(transformed);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.error.set(err.message);
-        this.loading.set(false);
-      }
-    });
+    this.conversationService.initialize();
   }
 
   getSelectedConversation(): ConversationWithLastMessage | undefined {

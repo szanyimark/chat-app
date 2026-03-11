@@ -20,8 +20,8 @@
         (click)="setActiveTab('friends')"
       >
         Friends
-        @if (friends().length > 0) {
-          <span class="badge">{{ friends().length }}</span>
+        @if (friendService.friends().length > 0) {
+          <span class="badge">{{ friendService.friends().length }}</span>
         }
       </button>
       <button 
