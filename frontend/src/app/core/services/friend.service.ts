@@ -3,9 +3,15 @@ import { Apollo } from 'apollo-angular';
 import { Subject, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
-import { GET_FRIEND_REQUESTS } from '../graphql/operations/queries';
+import { GET_FRIEND_REQUESTS, GET_MY_FRIENDS } from '../graphql/operations/queries';
 import { FRIEND_REQUEST_UPDATED, FRIENDSHIP_UPDATED } from '../graphql/operations/subscriptions';
-import { FriendRequest } from '../graphql/generated/graphql';
+import { FriendRequest, User } from '../graphql/generated/graphql';
+
+export interface FriendSummary {
+  id: string;
+  username: string;
+  avatar?: string | null;
+}
 
 export interface FriendRequestWithUser {
   id: string;
@@ -23,9 +29,12 @@ export class FriendService {
   private authService = inject(AuthService);
 
   // State
+  friends = signal<FriendSummary[]>([]);
   incomingRequests = signal<FriendRequestWithUser[]>([]);
   outgoingRequests = signal<FriendRequestWithUser[]>([]);
   loading = signal(false);
+
+  friendIds = computed(() => this.friends().map(friend => friend.id));
   
   // Badge count (computed from incoming requests)
   pendingCount = computed(() => 
@@ -35,8 +44,12 @@ export class FriendService {
   // Emits when friends list should reload (request accepted, friend removed, etc.)
   friendsChanged$ = new Subject<void>();
   
+  // Emits when a new friend is added (request accepted)
+  friendAdded$ = new Subject<{ friendId: string; friendUsername: string }>();
+  
   private currentSubscription: Subscription | null = null;
   private currentFriendshipSubscription: Subscription | null = null;
+  
   private currentUserId: string | null = null;
 
   initialize() {
@@ -47,6 +60,7 @@ export class FriendService {
           if (me?.id) {
             this.clearCacheAndReset();
             this.startSubscription(me.id);
+            this.loadFriends();
             this.loadFriendRequests();
           }
         }
@@ -60,7 +74,30 @@ export class FriendService {
     }
 
     this.startSubscription(user.id);
+    this.loadFriends();
     this.loadFriendRequests();
+  }
+
+  loadFriends(onLoaded?: () => void) {
+    this.apollo.query<{ myFriends: User[] }>({
+      query: GET_MY_FRIENDS,
+      fetchPolicy: 'network-only'
+    }).pipe(
+      map(result => result.data?.myFriends ?? [])
+    ).subscribe({
+      next: (friends) => {
+        const transformed: FriendSummary[] = friends.map(friend => ({
+          id: friend.id ?? '',
+          username: friend.username ?? '',
+          avatar: friend.avatar
+        }));
+        this.friends.set(transformed);
+        onLoaded?.();
+      },
+      error: () => {
+        onLoaded?.();
+      }
+    });
   }
 
   loadFriendRequests() {
@@ -135,7 +172,18 @@ export class FriendService {
         this.loadFriendRequests();
         // Only accepted requests change the friends list.
         if (update?.status === 'ACCEPTED') {
-          this.friendsChanged$.next();
+          // Determine which user is now our friend based on IDs
+          const fromUserId = update.fromUser?.id;
+          const toUserId = update.toUser?.id;
+          const friendId = fromUserId === this.currentUserId ? toUserId : fromUserId;
+          const friendUsername = fromUserId === this.currentUserId 
+            ? update.toUser?.username 
+            : update.fromUser?.username;
+          
+          if (friendId && friendUsername) {
+            this.friendAdded$.next({ friendId, friendUsername });
+          }
+                    this.loadFriends(() => this.friendsChanged$.next());
         }
       },
       error: () => {
@@ -155,7 +203,7 @@ export class FriendService {
       variables: { userId }
     }).subscribe({
       next: () => {
-        this.friendsChanged$.next();
+        this.loadFriends(() => this.friendsChanged$.next());
       },
       error: () => {
         this.currentFriendshipSubscription = null;
@@ -182,6 +230,7 @@ export class FriendService {
     // Clear Apollo cache to prevent data pollution when switching users
     this.apollo.client.cache.reset();
     // Clear local state
+    this.friends.set([]);
     this.incomingRequests.set([]);
     this.outgoingRequests.set([]);
   }

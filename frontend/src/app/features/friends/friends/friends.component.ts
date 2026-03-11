@@ -3,12 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Apollo } from 'apollo-angular';
 import { Subject } from 'rxjs';
-import { map, takeUntil } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../core/auth/auth.service';
 import { FriendService } from '../../../core/services/friend.service';
-import { GET_MY_FRIENDS } from '../../../core/graphql/operations/queries';
 import { RESPOND_TO_FRIEND_REQUEST, REMOVE_FRIEND } from '../../../core/graphql/operations/mutations';
-import { User } from '../../../core/graphql/generated/graphql';
 import { AddFriendComponent } from '../add-friend/add-friend.component';
 import "primeicons/primeicons.css";
 
@@ -33,7 +31,6 @@ export class FriendsComponent implements OnInit, OnDestroy {
   protected friendService = inject(FriendService);
   private destroy$ = new Subject<void>();
 
-  friends = signal<FriendWithStatus[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
   searchQuery = signal('');
@@ -42,13 +39,6 @@ export class FriendsComponent implements OnInit, OnDestroy {
   currentUserId: string | null = null;
 
   ngOnInit() {
-    // Listen for friends list changes (accepted requests, removals, etc.)
-    this.friendService.friendsChanged$.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(() => {
-      this.loadFriends();
-    });
-
     const user = this.authService.currentUser();
     if (user?.id) {
       this.initializeForCurrentUser(user.id);
@@ -79,33 +69,10 @@ export class FriendsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  loadFriends() {
-    this.apollo.watchQuery<{ myFriends: User[] }>({
-      query: GET_MY_FRIENDS,
-      fetchPolicy: 'network-only'
-    }).valueChanges.pipe(
-      map(result => result.data?.myFriends ?? [])
-    ).subscribe({
-      next: (friends) => {
-        const transformed: FriendWithStatus[] = friends.map(f => ({
-          id: f.id ?? '',
-          username: f.username ?? '',
-          avatar: f.avatar
-        }));
-        this.friends.set(transformed);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.error.set(err.message);
-        this.loading.set(false);
-      }
-    });
-  }
-
   get filteredFriends(): FriendWithStatus[] {
     const query = this.searchQuery().toLowerCase();
-    if (!query) return this.friends();
-    return this.friends().filter(friend => 
+    if (!query) return this.friendService.friends();
+    return this.friendService.friends().filter(friend => 
       friend.username.toLowerCase().includes(query)
     );
   }
@@ -139,7 +106,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
   }
 
   get existingFriendIds(): string[] {
-    return this.friends().map(friend => friend.id);
+    return this.friendService.friendIds();
   }
 
   setActiveTab(tab: 'friends' | 'requests') {
@@ -166,7 +133,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: () => {
         // Reload both friends and requests to reflect the change
-        this.loadFriends();
+        this.friendService.loadFriends();
         this.friendService.loadFriendRequests();
       },
       error: (err) => {
@@ -210,7 +177,7 @@ export class FriendsComponent implements OnInit, OnDestroy {
           this.error.set('Unable to remove friend');
           return;
         }
-        this.loadFriends();
+        this.friendService.loadFriends();
       },
       error: (err) => {
         console.error('Failed to remove friend:', err);
@@ -226,6 +193,6 @@ export class FriendsComponent implements OnInit, OnDestroy {
   private initializeForCurrentUser(userId: string) {
     this.currentUserId = userId;
     this.friendService.initialize();
-    this.loadFriends();
+    this.loading.set(false);
   }
 }
