@@ -44,7 +44,7 @@
     @for (conversation of filteredConversations; track conversation.id) {
       <div 
         class="chat-item" 
-        [class.active]="selectedConversationId === conversation.id"
+        [class.active]="chatUiState.selectedConversationId() === conversation.id"
         (click)="selectConversation(conversation.id)"
       >
         <div class="avatar">

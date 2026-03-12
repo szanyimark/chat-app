@@ -8,8 +8,6 @@
   <!-- Left Panel: Chat List -->
   <div class="chat-list-panel">
     <app-chat-list
-      [selectedConversationId]="selectedConversationId()"
-      (conversationSelected)="onConversationSelected($event)"
       (newChatClicked)="onNewChat()"
     ></app-chat-list>
   </div>
@@ -18,7 +16,6 @@
   <div class="chat-view-panel">
     <app-chat
       [conversation]="getChatConversation()"
-      [currentUserId]="currentUserId"
       (sendMessage)="onSendMessage($event)"
     ></app-chat>
   </div>

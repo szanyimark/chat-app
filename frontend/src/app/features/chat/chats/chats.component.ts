@@ -1,45 +1,35 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../../core/auth/auth.service';
-import { ConversationService, ConversationWithLastMessage } from '../../../core/services/conversation.service';
+import { ConversationService } from '../../../core/services/conversation.service';
 import { ChatListComponent } from '../chat-list/chat-list.component';
 import { ChatComponent, ChatConversation } from '../chat/chat.component';
 import { ChatDetailsComponent, ConversationDetails } from '../chat-details/chat-details.component';
 import { NewChatDialogComponent } from '../new-chat-dialog/new-chat-dialog.component';
+import { ChatUiStateService } from '../chat-ui-state.service';
 
 @Component({
   selector: 'app-chats',
   standalone: true,
+  providers: [ChatUiStateService],
   imports: [CommonModule, ChatListComponent, ChatComponent, ChatDetailsComponent, NewChatDialogComponent],
   templateUrl: './chats.component.html',
   styleUrl: './chats.component.scss'
 })
 export class ChatsComponent implements OnInit {
-  private authService = inject(AuthService);
   protected conversationService = inject(ConversationService);
+  protected chatUiState = inject(ChatUiStateService);
 
   conversations = this.conversationService.conversations;
   loading = this.conversationService.loadingConversations;
   error = this.conversationService.errorConversations;
-  selectedConversationId = signal<string | null>(null);
   showNewChatDialog = signal(false);
 
-  currentUserId: string | null = null;
-
   ngOnInit() {
-    const user = this.authService.currentUser();
-    this.currentUserId = user?.id ?? null;
     this.conversationService.initialize();
   }
 
-  getSelectedConversation(): ConversationWithLastMessage | undefined {
-    const id = this.selectedConversationId();
-    if (!id) return undefined;
-    return this.conversations().find(c => c.id === id);
-  }
-
   getChatConversation(): ChatConversation | null {
-    const conv = this.getSelectedConversation();
+    const conv = this.chatUiState.selectedConversation();
     if (!conv) return null;
     
     return {
@@ -58,7 +48,7 @@ export class ChatsComponent implements OnInit {
   }
 
   getConversationDetails(): ConversationDetails | null {
-    const conv = this.getSelectedConversation();
+    const conv = this.chatUiState.selectedConversation();
     if (!conv) return null;
     
     return {
@@ -68,10 +58,6 @@ export class ChatsComponent implements OnInit {
       avatar: conv.avatar,
       members: conv.members
     };
-  }
-
-  onConversationSelected(conversationId: string) {
-    this.selectedConversationId.set(conversationId);
   }
 
   onNewChat() {
@@ -84,7 +70,7 @@ export class ChatsComponent implements OnInit {
 
   onConversationCreated(conversationId: string) {
     this.conversationService.loadConversations();
-    this.onConversationSelected(conversationId);
+    this.chatUiState.selectConversation(conversationId);
     this.showNewChatDialog.set(false);
   }
 
