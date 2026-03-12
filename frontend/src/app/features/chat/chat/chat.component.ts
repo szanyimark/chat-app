@@ -1,7 +1,13 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ConversationType } from '../../../core/graphql/generated/graphql';
+import { AuthService } from '../../../core/auth/auth.service';
+import {
+  getConversationDisplayAvatar,
+  getConversationDisplayName,
+  getInitials
+} from '../conversation-display.util';
 
 export interface Message {
   id: string;
@@ -30,8 +36,10 @@ export interface ChatConversation {
   styleUrl: './chat.component.scss'
 })
 export class ChatComponent {
+  private authService = inject(AuthService);
+  readonly getInitials = getInitials;
+
   @Input() conversation: ChatConversation | null | undefined = null;
-  @Input() currentUserId: string | null = null;
   @Output() sendMessage = new EventEmitter<string>();
 
   newMessage = '';
@@ -39,32 +47,15 @@ export class ChatComponent {
   getConversationName(): string {
     const conv = this.conversation;
     if (!conv) return '';
-    
-    if (conv.type === ConversationType.Private && this.currentUserId) {
-      const otherMember = conv.members.find(m => m.id !== this.currentUserId);
-      return otherMember?.username || 'Unknown';
-    }
-    return conv.name || 'Unnamed Group';
+
+    return getConversationDisplayName(conv, this.authService.currentUser()?.id);
   }
 
   getConversationAvatar(): string | null | undefined {
     const conv = this.conversation;
     if (!conv) return undefined;
-    
-    if (conv.type === ConversationType.Private && this.currentUserId) {
-      const otherMember = conv.members.find(m => m.id !== this.currentUserId);
-      return otherMember?.avatar;
-    }
-    return conv.avatar;
-  }
 
-  getInitials(name: string): string {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+    return getConversationDisplayAvatar(conv, this.authService.currentUser()?.id);
   }
 
   onSendMessage() {

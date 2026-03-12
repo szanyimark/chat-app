@@ -2,6 +2,12 @@ import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ConversationType } from '../../../core/graphql/generated/graphql';
 import { AuthService } from '../../../core/auth/auth.service';
+import {
+  getConversationDisplayAvatar,
+  getConversationDisplayName,
+  getInitials,
+  getOtherConversationMember
+} from '../conversation-display.util';
 
 export interface ConversationMember {
   id: string;
@@ -26,23 +32,34 @@ export interface ConversationDetails {
 })
 export class ChatDetailsComponent {
   private authService = inject(AuthService);
+  readonly getInitials = getInitials;
 
   @Input() conversation: ConversationDetails | null | undefined = null;
 
-  getInitials(name: string): string {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+  get currentUserId(): string | null {
+    return this.authService.currentUser()?.id ?? null;
+  }
+
+  getConversationName(): string {
+    if (!this.conversation) {
+      return 'Unnamed Chat';
+    }
+
+    return getConversationDisplayName(this.conversation, this.currentUserId);
+  }
+
+  getConversationAvatar(): string | null | undefined {
+    if (!this.conversation) {
+      return undefined;
+    }
+
+    return getConversationDisplayAvatar(this.conversation, this.currentUserId);
   }
 
   getOtherMember(): ConversationMember | undefined {
     const conv = this.conversation;
-    const currentUserId = this.authService.currentUser()?.id;
-    if (conv?.type === ConversationType.Private && currentUserId) {
-      return conv.members.find(m => m.id !== currentUserId);
+    if (conv?.type === ConversationType.Private && this.currentUserId) {
+      return getOtherConversationMember(conv, this.currentUserId);
     }
     return undefined;
   }

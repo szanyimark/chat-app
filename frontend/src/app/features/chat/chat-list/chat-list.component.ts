@@ -1,26 +1,14 @@
-import { Component, Input, Output, EventEmitter, inject, signal } from '@angular/core';
+import { Component, Output, EventEmitter, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ConversationType } from '../../../core/graphql/generated/graphql';
-import { ConversationService } from '../../../core/services/conversation.service';
+import { ConversationService, ConversationWithLastMessage } from '../../../core/services/conversation.service';
 import { AuthService } from '../../../core/auth/auth.service';
-
-interface ConversationWithLastMessage {
-  id: string;
-  type: ConversationType;
-  name?: string | null;
-  avatar?: string | null;
-  members: { id: string; username: string; avatar?: string | null }[];
-  lastMessage?: {
-    id: string;
-    content: string;
-    createdAt: Date;
-    sender: {
-      id: string;
-      username: string;
-    };
-  };
-}
+import {
+  getConversationDisplayAvatar,
+  getConversationDisplayName,
+  getInitials
+} from '../conversation-display.util';
+import { ChatUiStateService } from '../chat-ui-state.service';
 
 @Component({
   selector: 'app-chat-list',
@@ -32,6 +20,7 @@ interface ConversationWithLastMessage {
 export class ChatListComponent {
   private conversationService = inject(ConversationService);
   private authService = inject(AuthService);
+  protected chatUiState = inject(ChatUiStateService);
 
   conversations = this.conversationService.conversations;
   loading = this.conversationService.loadingConversations;
@@ -41,12 +30,10 @@ export class ChatListComponent {
     return this.authService.currentUser()?.id ?? null;
   }
 
-  @Input() selectedConversationId: string | null = null;
-
-  @Output() conversationSelected = new EventEmitter<string>();
   @Output() newChatClicked = new EventEmitter<void>();
 
   searchQuery = signal('');
+  readonly getInitials = getInitials;
 
   get filteredConversations(): ConversationWithLastMessage[] {
     const query = this.searchQuery().toLowerCase();
@@ -57,24 +44,15 @@ export class ChatListComponent {
   }
 
   getConversationName(conversation: ConversationWithLastMessage): string {
-    if (conversation.type === ConversationType.Private && conversation.members && this.currentUserId) {
-      const otherMember = conversation.members.find(m => m.id !== this.currentUserId);
-      return otherMember?.username || 'Unknown';
-    }
-    return conversation.name || 'Unnamed Group';
+    return getConversationDisplayName(conversation, this.currentUserId);
   }
 
   getConversationAvatar(conversation: ConversationWithLastMessage): string | null | undefined {
-    if (conversation.type === ConversationType.Private && conversation.members && this.currentUserId) {
-      const otherMember = conversation.members.find(m => m.id !== this.currentUserId);
-      return otherMember?.avatar;
-    }
-    return conversation.avatar;
+    return getConversationDisplayAvatar(conversation, this.currentUserId);
   }
 
   selectConversation(conversationId: string) {
-    this.selectedConversationId = conversationId;
-    this.conversationSelected.emit(conversationId);
+    this.chatUiState.selectConversation(conversationId);
   }
 
   newChat() {
@@ -99,12 +77,4 @@ export class ChatListComponent {
     }
   }
 
-  getInitials(name: string): string {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  }
 }

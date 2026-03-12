@@ -7,15 +7,15 @@
       
       <div class="profile-section">
         <div class="profile-avatar large">
-          @if (conv.avatar; as avatar) {
-            <img [src]="avatar" [alt]="conv.name || 'Chat'">
+          @if (getConversationAvatar(); as avatar) {
+            <img [src]="avatar" [alt]="getConversationName()">
           } @else {
             <div class="avatar-placeholder">
-              {{ getInitials(conv.name || 'Chat') }}
+              {{ getInitials(getConversationName()) }}
             </div>
           }
         </div>
-        <h4 class="profile-name">{{ conv.name || 'Unnamed Chat' }}</h4>
+        <h4 class="profile-name">{{ getConversationName() }}</h4>
         @if (conv.type === 'PRIVATE' && getOtherMember(); as member) {
           <span class="profile-status">Online</span>
         }
