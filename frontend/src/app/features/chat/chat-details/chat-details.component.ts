@@ -1,6 +1,7 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ConversationType } from '../../../core/graphql/generated/graphql';
+import { AuthService } from '../../../core/auth/auth.service';
 
 export interface ConversationMember {
   id: string;
@@ -24,8 +25,9 @@ export interface ConversationDetails {
   styleUrl: './chat-details.component.scss'
 })
 export class ChatDetailsComponent {
+  private authService = inject(AuthService);
+
   @Input() conversation: ConversationDetails | null | undefined = null;
-  @Input() currentUserId: string | null = null;
 
   getInitials(name: string): string {
     return name
@@ -38,8 +40,9 @@ export class ChatDetailsComponent {
 
   getOtherMember(): ConversationMember | undefined {
     const conv = this.conversation;
-    if (conv?.type === ConversationType.Private && this.currentUserId) {
-      return conv.members.find(m => m.id !== this.currentUserId);
+    const currentUserId = this.authService.currentUser()?.id;
+    if (conv?.type === ConversationType.Private && currentUserId) {
+      return conv.members.find(m => m.id !== currentUserId);
     }
     return undefined;
   }
