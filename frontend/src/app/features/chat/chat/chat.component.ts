@@ -44,6 +44,10 @@ export class ChatComponent {
 
   newMessage = '';
 
+  get currentUserId(): string | null {
+    return this.authService.currentUser()?.id ?? null;
+  }
+
   getConversationName(): string {
     const conv = this.conversation;
     if (!conv) return '';
